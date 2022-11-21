@@ -1,7 +1,7 @@
 pipeline {
     environment {
         IMAGE_TAG = "${(GIT_BRANCH == 'main') ? "0.$BUILD_NUMBER.0.$GIT_COMMIT" : "$GIT_COMMIT"}"
-        IMAGE_REPO_AND_TAG = "git.kende.pl/kende/accumulation-zone:$IMAGE_TAG"
+        IMAGE_REPO_AND_TAG = "mrdunski/accumulation-zone:$IMAGE_TAG"
         CHART_VERSION = "${(GIT_BRANCH == 'main') ? "0.$BUILD_NUMBER.0+$GIT_COMMIT" : "0.0.1+$GIT_COMMIT"}"
         DOCKER_BUILDKIT = "1"
     }
