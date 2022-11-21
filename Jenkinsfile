@@ -23,7 +23,7 @@ pipeline {
                     currentBuild.description = "image: $IMAGE_REPO_AND_TAG"
                 }
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'pwd', usernameVariable: 'usr')]) {
-                    sh "docker login --username $usr --password $pwd git.kende.pl"
+                    sh "docker login --username $usr --password $pwd"
                 }
                 sh "docker build --pull -t $IMAGE_REPO_AND_TAG ."
                 sh "docker push $IMAGE_REPO_AND_TAG"
