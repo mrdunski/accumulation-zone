@@ -1,7 +1,7 @@
 pipeline {
     environment {
         IMAGE_TAG = "${(GIT_BRANCH == 'main') ? "0.$BUILD_NUMBER.0.$GIT_COMMIT" : "$GIT_COMMIT"}"
-        IMAGE_REPO_AND_TAG = "git.kende.pl/kende/accumulation-zone:$IMAGE_TAG"
+        IMAGE_REPO_AND_TAG = "mrdunski/accumulation-zone:$IMAGE_TAG"
         CHART_VERSION = "${(GIT_BRANCH == 'main') ? "0.$BUILD_NUMBER.0+$GIT_COMMIT" : "0.0.1+$GIT_COMMIT"}"
         DOCKER_BUILDKIT = "1"
     }
@@ -22,8 +22,8 @@ pipeline {
                 script {
                     currentBuild.description = "image: $IMAGE_REPO_AND_TAG"
                 }
-                withCredentials([usernamePassword(credentialsId: 'gitea', passwordVariable: 'chartPassword', usernameVariable: 'chartUser')]) {
-                    sh "docker login --username $chartUser --password $chartPassword git.kende.pl"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'pwd', usernameVariable: 'usr')]) {
+                    sh "docker login --username $usr --password $pwd"
                 }
                 sh "docker build --pull -t $IMAGE_REPO_AND_TAG ."
                 sh "docker push $IMAGE_REPO_AND_TAG"
