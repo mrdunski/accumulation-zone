@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/alecthomas/kong v0.7.1
 	github.com/aws/aws-sdk-go v1.44.142
+	github.com/golang/mock v1.6.0
 	github.com/onsi/ginkgo/v2 v2.5.1
 	github.com/onsi/gomega v1.24.1
 )

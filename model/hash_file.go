@@ -1,3 +1,4 @@
+//go:generate mockgen -destination=mock_model/hash_file.go . HashedFile
 package model
 
 type HashedFile interface {

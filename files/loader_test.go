@@ -35,7 +35,7 @@ func fileWith(path, hash string) interface{} {
 	}}
 }
 
-var _ = Describe("RecursiveLoadHandlesInDir", func() {
+var _ = Describe("loader.LoadTree", func() {
 	_, f, _, _ := runtime.Caller(0)
 	dirPath := filepath.Dir(f)
 	testDir := filepath.Join(dirPath, "test")
@@ -82,7 +82,7 @@ var _ = Describe("RecursiveLoadHandlesInDir", func() {
 	})
 })
 
-var _ = Describe("LoadFile", func() {
+var _ = Describe("loader.LoadFile", func() {
 	When("valid file is given", func() {
 		var file TreeHashedFile
 

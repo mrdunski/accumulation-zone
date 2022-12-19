@@ -1,66 +1,30 @@
 package main
 
 import (
-	"fmt"
 	"github.com/alecthomas/kong"
-	"github.com/mrdunski/accumulation-zone/files"
-	"github.com/mrdunski/accumulation-zone/index"
-	"github.com/mrdunski/accumulation-zone/model"
-	"path"
+	"github.com/mrdunski/accumulation-zone/cmd/commit"
+	"github.com/mrdunski/accumulation-zone/cmd/inventory"
+	"github.com/mrdunski/accumulation-zone/cmd/ls"
+	"github.com/mrdunski/accumulation-zone/cmd/upload"
 )
 
-type ChangesCmdConfig struct {
-	Path      string   `arg:"" name:"" help:"Path to synchronize." type:"path"`
-	IndexFile string   `name:"" help:"File where synchronisation data will be kept." optional:"" default:".index.log"`
-	Excludes  []string `name:"exclude" help:"Exclude some files and directories by name" optional:"" sep:"none"`
-}
-
-var CLI struct {
+type CommandInput struct {
 	Changes struct {
-		Ls     ChangesCmdConfig `cmd:"" help:"list changes in the directory"`
-		Commit ChangesCmdConfig `cmd:"" help:"marks all detected changes as processed"`
-	} `cmd:"" help:"changes management"`
+		Ls     ls.Cmd     `cmd:"" help:"List changes in the directory."`
+		Commit commit.Cmd `cmd:"" help:"DANGER: marks all detected changes as processed and it won't be processed in the future."`
+		Upload upload.Cmd `cmd:"" help:"Uploads all changes to AWS vault and commits them as processed." group:"Backup"`
+	} `cmd:"" help:"Changes management." group:"Manage Changes"`
+
+	Inventory struct {
+		Retrieve inventory.RetrieveCmd `cmd:"" help:"Starts retrieval job for inventory."`
+		Print    inventory.PrintCmd    `cmd:"" help:"Awaits latest job completion and prints inventory."`
+	} `cmd:"" help:"Admin operations on glacier inventory." group:"Manage Glacier Inventory"`
 }
 
 func main() {
-	ctx := kong.Parse(&CLI)
+	var input = CommandInput{}
+	kongCtx := kong.Parse(&input)
 
-	switch ctx.Command() {
-	case "changes ls <path>":
-		changes, _ := getChanges(CLI.Changes.Ls)
-		println("Detected changes:")
-		for _, change := range changes {
-			fmt.Printf("* %v\n", change)
-		}
-	case "changes commit <path>":
-		changes, idx := getChanges(CLI.Changes.Commit)
-		for _, change := range changes {
-			err := idx.CommitChange("", change)
-			if err != nil {
-				panic(err)
-			}
-		}
-		println("Done")
-	default:
-		panic(ctx.Command())
-	}
-}
-
-func getChanges(cfg ChangesCmdConfig) ([]model.Change, index.Index) {
-	var excludes []string
-	excludes = append(excludes, cfg.IndexFile)
-	if len(cfg.Excludes) > 0 {
-		excludes = append(excludes, cfg.Excludes...)
-	}
-	tree, err := files.NewLoader(cfg.Path, excludes...).LoadTree()
-	if err != nil {
-		panic(err)
-	}
-
-	idx, err := index.LoadIndexFile(path.Join(cfg.Path, cfg.IndexFile))
-	if err != nil {
-		panic(err)
-	}
-
-	return idx.CalculateChanges(model.AsHashedFiles(tree)), idx
+	err := kongCtx.Run()
+	kongCtx.FatalIfErrorf(err)
 }

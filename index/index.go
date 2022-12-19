@@ -38,14 +38,14 @@ func New(entryList []Entry) Index {
 }
 
 func LoadIndexFile(filePath string) (Index, error) {
-	fileRecords := fileRecords{filePath: filePath}
-	data, err := fileRecords.loadEntries()
+	records := fileRecords{filePath: filePath}
+	data, err := records.loadEntries()
 	if err != nil {
 		return Index{}, err
 	}
 
 	return Index{
-		committer: fileRecords,
+		committer: records,
 		entries:   data,
 	}, nil
 }
@@ -87,7 +87,7 @@ func (i Index) CalculateChange(file model.HashedFile) (model.Change, bool) {
 }
 
 func (i Index) commitAdd(changeId string, change model.Change) error {
-	if i.entries.hasEntryWithChangeId(change.Path(), changeId) {
+	if i.entries.hasEntryWithChangeId(change.Path(), changeId) && changeId != "" {
 		return errors.New("change already exist")
 	}
 	entry := NewEntry(change.Path(), change.Hash(), changeId)
