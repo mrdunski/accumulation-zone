@@ -28,7 +28,7 @@ const (
 
 func TestGlacier(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "changes")
+	RunSpecs(t, "glacier")
 }
 
 var _ = Describe("Connection", func() {
