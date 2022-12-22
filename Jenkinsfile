@@ -14,6 +14,7 @@ pipeline {
             steps {
                 sh "docker build  --pull --no-cache -o build --target artifacts ."
                 junit 'build/report.xml'
+                cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'build/coverprofile.xml', conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
             }
         }
 
