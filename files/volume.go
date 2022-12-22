@@ -27,17 +27,17 @@ type FileAccess interface {
 	Open(name string) (io.ReadCloser, error)
 }
 
-type Loader struct {
+type Volume struct {
 	os       FileAccess
 	basePath string
 	excludes []string
 }
 
-func NewLoader(basePath string, excludes ...string) Loader {
-	return Loader{os: stdOSInstance, basePath: basePath, excludes: excludes}
+func NewLoader(basePath string, excludes ...string) Volume {
+	return Volume{os: stdOSInstance, basePath: basePath, excludes: excludes}
 }
 
-func (l Loader) isExcluded(path string) bool {
+func (l Volume) isExcluded(path string) bool {
 	for _, exclude := range l.excludes {
 		if strings.Contains(path, exclude) {
 			return true
@@ -47,7 +47,7 @@ func (l Loader) isExcluded(path string) bool {
 	return false
 }
 
-func (l Loader) LoadFile(subPath string) (_ TreeHashedFile, err error) {
+func (l Volume) LoadFile(subPath string) (_ TreeHashedFile, err error) {
 	file, err := os.Open(path.Join(l.basePath, subPath))
 	if err != nil {
 		return
@@ -72,7 +72,48 @@ func (l Loader) LoadFile(subPath string) (_ TreeHashedFile, err error) {
 	}, nil
 }
 
-func (l Loader) loadEntry(entrySubPath string, entry os.DirEntry) ([]model.FileWithContent, error) {
+func (l Volume) createDirIfNotExist(content model.FileWithContent) error {
+	dirPath := path.Join(l.basePath, path.Dir(content.Path()))
+	return os.MkdirAll(dirPath, 0700)
+}
+
+func (l Volume) Save(content model.FileWithContent) (err error) {
+	reader, err := content.Content()
+	if err != nil {
+		return
+	}
+	defer func(closer io.Closer) {
+		closeErr := closer.Close()
+		if closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}(reader)
+
+	err = l.createDirIfNotExist(content)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.OpenFile(path.Join(l.basePath, content.Path()), os.O_TRUNC|os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return
+	}
+	defer func(file *os.File) {
+		closeErr := file.Close()
+		if closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}(file)
+
+	_, err = io.Copy(file, reader)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (l Volume) loadEntry(entrySubPath string, entry os.DirEntry) ([]model.FileWithContent, error) {
 	if l.isExcluded(entrySubPath) {
 		return nil, nil
 	}
@@ -92,7 +133,7 @@ func (l Loader) loadEntry(entrySubPath string, entry os.DirEntry) ([]model.FileW
 	return []model.FileWithContent{fileHandle}, nil
 }
 
-func (l Loader) loadSubPath(subPath string) ([]model.FileWithContent, error) {
+func (l Volume) loadSubPath(subPath string) ([]model.FileWithContent, error) {
 	absolutePath := path.Join(l.basePath, subPath)
 	entries, err := os.ReadDir(absolutePath)
 	if err != nil {
@@ -115,6 +156,6 @@ func (l Loader) loadSubPath(subPath string) ([]model.FileWithContent, error) {
 	return result, nil
 }
 
-func (l Loader) LoadTree() ([]model.FileWithContent, error) {
+func (l Volume) LoadTree() ([]model.FileWithContent, error) {
 	return l.loadSubPath("")
 }

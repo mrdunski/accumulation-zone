@@ -1,10 +1,16 @@
 package files
 
 import (
+	"errors"
 	"fmt"
+	"github.com/golang/mock/gomock"
+	. "github.com/mrdunski/accumulation-zone/gomega"
+	"github.com/mrdunski/accumulation-zone/model/mock_model"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"io"
+	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -35,7 +41,7 @@ func fileWith(path, hash string) interface{} {
 	}}
 }
 
-var _ = Describe("loader.LoadTree", func() {
+var _ = Describe("volume.LoadTree", func() {
 	_, f, _, _ := runtime.Caller(0)
 	dirPath := filepath.Dir(f)
 	testDir := filepath.Join(dirPath, "test")
@@ -82,7 +88,7 @@ var _ = Describe("loader.LoadTree", func() {
 	})
 })
 
-var _ = Describe("loader.LoadFile", func() {
+var _ = Describe("volume.LoadFile", func() {
 	When("valid file is given", func() {
 		var file TreeHashedFile
 
@@ -110,4 +116,63 @@ var _ = Describe("loader.LoadFile", func() {
 		})
 	})
 
+})
+
+var _ = Describe("volume.save", func() {
+	var testDir string
+	BeforeEach(func() {
+		temp, err := os.MkdirTemp(os.TempDir(), "acc-vol-*")
+		if !Expect(err).NotTo(HaveOccurred()) {
+			return
+		}
+
+		testDir = temp
+	})
+
+	It("saves content into new file", func() {
+		file := mock_model.NewMockFileWithContent(gomock.NewController(GinkgoT()))
+		file.EXPECT().Path().AnyTimes().Return("file.txt")
+		file.EXPECT().Content().Return(io.NopCloser(strings.NewReader("test-content")), nil)
+
+		loader := NewLoader(testDir)
+		err := loader.Save(file)
+
+		Expect(err).ToNot(HaveOccurred())
+
+		actualContent, err := os.ReadFile(path.Join(testDir, "file.txt"))
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(actualContent)).To(Equal("test-content"))
+	})
+
+	It("saves content into existing file", func() {
+		_ = os.WriteFile(path.Join(testDir, "existing.txt"), []byte("???"), 0666)
+
+		file := mock_model.NewMockFileWithContent(gomock.NewController(GinkgoT()))
+		file.EXPECT().Path().AnyTimes().Return("existing.txt")
+		file.EXPECT().Content().Return(io.NopCloser(strings.NewReader("test-content")), nil)
+
+		loader := NewLoader(testDir)
+		err := loader.Save(file)
+
+		Expect(err).ToNot(HaveOccurred())
+
+		actualContent, err := os.ReadFile(path.Join(testDir, "existing.txt"))
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(actualContent)).To(Equal("test-content"))
+	})
+
+	It("handles content err", func() {
+		expectedErr := errors.New("content err")
+
+		file := mock_model.NewMockFileWithContent(gomock.NewController(GinkgoT()))
+		file.EXPECT().Path().AnyTimes().Return("file.txt")
+		file.EXPECT().Content().Return(nil, expectedErr)
+
+		loader := NewLoader(testDir)
+		err := loader.Save(file)
+
+		Expect(err).To(WrapError(expectedErr))
+	})
 })

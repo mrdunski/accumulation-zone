@@ -9,18 +9,23 @@ import (
 )
 
 type Directory struct {
-	Path      string   `arg:"" name:"" help:"Path to synchronize." type:"path"`
+	Path      string   `arg:"" env:"PATH_TO_SYNCHRONIZE" name:"" help:"Path to synchronize." type:"path"`
 	IndexFile string   `help:"File where synchronisation data will be kept." optional:"" default:".changes.log"`
 	Excludes  []string `name:"exclude" help:"Exclude some files and directories by name" optional:"" sep:"none"`
 }
 
-func (c Directory) GetChanges() (model.Changes, index.Index, error) {
+func (c Directory) allExcludes() []string {
 	var excludes []string
 	excludes = append(excludes, c.IndexFile)
 	if len(c.Excludes) > 0 {
 		excludes = append(excludes, c.Excludes...)
 	}
-	tree, err := files.NewLoader(c.Path, excludes...).LoadTree()
+
+	return excludes
+}
+
+func (c Directory) GetChanges() (model.Changes, index.Index, error) {
+	tree, err := files.NewLoader(c.Path, c.allExcludes()...).LoadTree()
 	if err != nil {
 		return model.Changes{}, index.Index{}, fmt.Errorf("failed to load tree {%s}: %w", c.Path, err)
 	}
@@ -40,4 +45,8 @@ func (c Directory) CreateIndex() (index.Index, error) {
 	}
 
 	return idx, nil
+}
+
+func (c Directory) SaveFile(file model.FileWithContent) error {
+	return files.NewLoader(c.Path, c.allExcludes()...).Save(file)
 }

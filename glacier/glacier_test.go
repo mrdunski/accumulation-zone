@@ -11,6 +11,7 @@ import (
 	"github.com/mrdunski/accumulation-zone/files"
 	"github.com/mrdunski/accumulation-zone/glacier"
 	"github.com/mrdunski/accumulation-zone/glacier/mock_glacier"
+	. "github.com/mrdunski/accumulation-zone/gomega"
 	"github.com/mrdunski/accumulation-zone/index"
 	"github.com/mrdunski/accumulation-zone/model"
 	"github.com/mrdunski/accumulation-zone/model/mock_model"
@@ -31,6 +32,7 @@ const (
 	testFileContent = "testContent"
 	testFileHash    = "mockedHash"
 	testFilePath    = "mockedPath"
+	testFileId      = "mockedId"
 )
 
 func TestGlacier(t *testing.T) {
@@ -155,8 +157,7 @@ var _ = Describe("Connection", func() {
 			glacierCli.EXPECT().DeleteArchive(gomock.Any()).AnyTimes().Return(&awsGlacier.DeleteArchiveOutput{}, nil)
 
 			err := connection.Process(committer, model.Changes{Deletions: []model.FileDeleted{change}})
-			Expect(err).To(HaveOccurred())
-			Expect(errors.Is(err, commitErr)).To(BeTrue())
+			Expect(err).To(WrapError(commitErr))
 		})
 	})
 
@@ -263,7 +264,7 @@ var _ = Describe("Connection", func() {
 			err := connection.PrintInventory()
 
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(errors.New("inventory job failed: bad weather")))
+			Expect(err).To(MatchError("job failed: bad weather"))
 		})
 	})
 
@@ -303,12 +304,17 @@ var _ = Describe("Connection", func() {
 			glacierCli.EXPECT().ListJobs(gomock.Eq(&awsGlacier.ListJobsInput{
 				AccountId: aws.String(testAccountId),
 				VaultName: aws.String(testVaultName),
-			})).Times(2).DoAndReturn(func(_ *awsGlacier.ListJobsInput) (*awsGlacier.ListJobsOutput, error) {
+			})).Return(&awsGlacier.ListJobsOutput{JobList: []*awsGlacier.JobDescription{&inProgress}}, nil)
+			glacierCli.EXPECT().DescribeJob(gomock.Eq(&awsGlacier.DescribeJobInput{
+				AccountId: aws.String(testAccountId),
+				VaultName: aws.String(testVaultName),
+				JobId:     aws.String("aJob"),
+			})).Times(2).DoAndReturn(func(_ interface{}) (*awsGlacier.JobDescription, error) {
 				if firstCall {
 					firstCall = false
-					return &awsGlacier.ListJobsOutput{JobList: []*awsGlacier.JobDescription{&inProgress}}, nil
+					return &inProgress, nil
 				}
-				return &awsGlacier.ListJobsOutput{JobList: []*awsGlacier.JobDescription{&done}}, nil
+				return &done, nil
 			})
 
 			glacierCli.EXPECT().
@@ -429,6 +435,199 @@ ArchiveList:
 			})
 		})
 	})
+
+	Describe("CreateArchiveJob", func() {
+
+		Context("with example file", func() {
+			var file *mock_model.MockIdentifiableHashedFile
+			var job *awsGlacier.JobDescription
+			var retrievalOptions = glacier.ArchiveRetrievalOptions{Tier: glacier.TierBulk}
+
+			BeforeEach(func() {
+				file = NewTestingFile()
+
+				job = &awsGlacier.JobDescription{
+					JobId: aws.String("aJob"),
+				}
+			})
+
+			It("creates archive retrieval job", func() {
+				glacierCli.EXPECT().InitiateJob(gomock.Eq(&awsGlacier.InitiateJobInput{
+					AccountId: aws.String(testAccountId),
+					VaultName: aws.String(testVaultName),
+					JobParameters: &awsGlacier.JobParameters{
+						Tier:        aws.String(string(retrievalOptions.Tier)),
+						ArchiveId:   aws.String(testFileId),
+						Description: aws.String(testFilePath),
+						Type:        aws.String("archive-retrieval"),
+					},
+				})).Return(&awsGlacier.InitiateJobOutput{JobId: job.JobId}, nil)
+				glacierCli.EXPECT().DescribeJob(&awsGlacier.DescribeJobInput{
+					AccountId: aws.String(testAccountId),
+					VaultName: aws.String(testVaultName),
+					JobId:     job.JobId,
+				}).Return(job, nil)
+
+				job, err := connection.CreateArchiveJob(file, retrievalOptions)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(job).ToNot(BeNil())
+			})
+
+			It("handles job description error", func() {
+				descrErr := errors.New("something bad")
+				glacierCli.EXPECT().InitiateJob(gomock.Any()).Return(&awsGlacier.InitiateJobOutput{JobId: job.JobId}, nil)
+				glacierCli.EXPECT().DescribeJob(gomock.Any()).Return(nil, descrErr)
+
+				job, err := connection.CreateArchiveJob(file, retrievalOptions)
+
+				Expect(err).To(WrapError(descrErr))
+				Expect(job).To(BeNil())
+			})
+
+			It("handles job creation error", func() {
+				initErr := errors.New("something bad")
+				glacierCli.EXPECT().InitiateJob(gomock.Any()).Return(nil, initErr)
+
+				job, err := connection.CreateArchiveJob(file, retrievalOptions)
+
+				Expect(err).To(WrapError(initErr))
+				Expect(job).To(BeNil())
+			})
+		})
+
+	})
+
+	Describe("FindOrCreateArchiveJob", func() {
+		var testingFile, otherFile *mock_model.MockIdentifiableHashedFile
+
+		BeforeEach(func() {
+			testingFile = NewTestingFile()
+			otherFile = NewFile("otherId")
+		})
+
+		Context("with job for test file", func() {
+			var existingJob, createdJob awsGlacier.JobDescription
+
+			BeforeEach(func() {
+				existingJob = awsGlacier.JobDescription{
+					JobId:     aws.String("aJob"),
+					ArchiveId: aws.String(testFileId),
+				}
+				createdJob = awsGlacier.JobDescription{
+					JobId:     aws.String("someOtherJob"),
+					ArchiveId: aws.String(testFileId),
+				}
+
+				glacierCli.EXPECT().ListJobs(gomock.Any()).AnyTimes().Return(&awsGlacier.ListJobsOutput{JobList: []*awsGlacier.JobDescription{&existingJob}}, nil)
+				glacierCli.EXPECT().DescribeJob(gomock.Eq(&awsGlacier.DescribeJobInput{AccountId: aws.String(testAccountId), VaultName: aws.String(testVaultName), JobId: existingJob.JobId})).AnyTimes().Return(&existingJob, nil)
+				glacierCli.EXPECT().InitiateJob(gomock.Any()).AnyTimes().Return(&awsGlacier.InitiateJobOutput{JobId: aws.String("someOtherJob")}, nil)
+				glacierCli.EXPECT().DescribeJob(gomock.Eq(&awsGlacier.DescribeJobInput{AccountId: aws.String(testAccountId), VaultName: aws.String(testVaultName), JobId: createdJob.JobId})).AnyTimes().Return(&createdJob, nil)
+			})
+
+			It("returns a existingJob for test file", func() {
+				result, err := connection.FindOrCreateArchiveJob(testingFile, glacier.ArchiveRetrievalOptions{Tier: glacier.TierExpedited})
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(result).To(Equal(&existingJob))
+			})
+
+			It("creates a existingJob for other file", func() {
+				result, err := connection.FindOrCreateArchiveJob(otherFile, glacier.ArchiveRetrievalOptions{Tier: glacier.TierStandard})
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(result).To(Equal(&createdJob))
+			})
+		})
+
+		Context("with failing call for jobs", func() {
+			connErr := errors.New("omg")
+
+			BeforeEach(func() {
+				glacierCli.EXPECT().ListJobs(gomock.Any()).AnyTimes().Return(nil, connErr)
+			})
+
+			It("handles err", func() {
+				job, err := connection.FindOrCreateArchiveJob(testingFile, glacier.ArchiveRetrievalOptions{})
+
+				Expect(err).To(WrapError(connErr))
+				Expect(job).To(BeNil())
+			})
+		})
+	})
+
+	Describe("LoadContentFromGlacier", func() {
+		Context("with job for test file", func() {
+			var existingJob awsGlacier.JobDescription
+
+			BeforeEach(func() {
+				existingJob = awsGlacier.JobDescription{
+					JobId:      aws.String("aJob"),
+					ArchiveId:  aws.String(testFileId),
+					StatusCode: aws.String("Succeeded"),
+				}
+
+				glacierCli.EXPECT().ListJobs(gomock.Any()).AnyTimes().Return(&awsGlacier.ListJobsOutput{JobList: []*awsGlacier.JobDescription{&existingJob}}, nil)
+				glacierCli.EXPECT().GetJobOutput(gomock.Eq(&awsGlacier.GetJobOutputInput{AccountId: aws.String(testAccountId), VaultName: aws.String(testVaultName), JobId: existingJob.JobId})).AnyTimes().Return(&awsGlacier.GetJobOutputOutput{Body: io.NopCloser(strings.NewReader(testFileContent))}, nil)
+			})
+
+			It("loads file content from job output", func() {
+				file := NewTestingFile()
+				fileFromGlacier, err := connection.LoadContentFromGlacier(file)
+
+				Expect(err).ToNot(HaveOccurred())
+				if Expect(fileFromGlacier).ToNot(BeNil()) {
+					content, err := fileFromGlacier.Content()
+					if Expect(err).NotTo(HaveOccurred()) {
+						bytes, err := io.ReadAll(content)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(bytes).To(Equal([]byte(testFileContent)))
+					}
+				}
+			})
+
+			It("handles job output error", func() {
+				missingFile := NewFile("missing")
+				fileFromGlacier, err := connection.LoadContentFromGlacier(missingFile)
+				Expect(err).To(HaveOccurred())
+				Expect(fileFromGlacier).To(BeNil())
+			})
+		})
+
+		var exampleErr = errors.New("omg")
+		DescribeTable("handle error", func(listErr, describeErr, outputErr, expectedFileErr, expectedFileContentErr error) {
+			existingJob := awsGlacier.JobDescription{
+				JobId:      aws.String("aJob"),
+				ArchiveId:  aws.String(testFileId),
+				StatusCode: aws.String("InProgress"),
+			}
+			finishedJob := awsGlacier.JobDescription{
+				JobId:      aws.String("aJob"),
+				ArchiveId:  aws.String(testFileId),
+				StatusCode: aws.String("Succeeded"),
+			}
+
+			glacierCli.EXPECT().ListJobs(gomock.Any()).AnyTimes().Return(&awsGlacier.ListJobsOutput{JobList: []*awsGlacier.JobDescription{&existingJob}}, listErr)
+			glacierCli.EXPECT().DescribeJob(gomock.Eq(&awsGlacier.DescribeJobInput{AccountId: aws.String(testAccountId), VaultName: aws.String(testVaultName), JobId: existingJob.JobId})).AnyTimes().Return(&finishedJob, describeErr)
+			glacierCli.EXPECT().GetJobOutput(gomock.Eq(&awsGlacier.GetJobOutputInput{AccountId: aws.String(testAccountId), VaultName: aws.String(testVaultName), JobId: finishedJob.JobId})).AnyTimes().Return(&awsGlacier.GetJobOutputOutput{Body: io.NopCloser(strings.NewReader(testFileContent))}, outputErr)
+
+			file := NewTestingFile()
+			fileFromGlacier, err := connection.LoadContentFromGlacier(file)
+
+			if expectedFileErr != nil {
+				Expect(err).To(WrapError(expectedFileErr))
+			} else if Expect(err).NotTo(HaveOccurred()) && Expect(fileFromGlacier).ToNot(BeNil()) {
+				_, err := fileFromGlacier.Content()
+				if expectedFileContentErr != nil {
+					Expect(err).To(WrapError(expectedFileContentErr))
+				}
+			}
+		},
+			Entry("in ListJobs", exampleErr, nil, nil, exampleErr, nil),
+			Entry("in DescribeJob", nil, exampleErr, nil, exampleErr, nil),
+			Entry("in GetJobOutput", nil, nil, exampleErr, nil, exampleErr),
+		)
+	})
 })
 
 type ArchiveEq awsGlacier.UploadArchiveInput
@@ -509,4 +708,17 @@ func (expected MatchingFile) FailureMessage(actual interface{}) string {
 
 func (expected MatchingFile) NegatedFailureMessage(_ interface{}) string {
 	return fmt.Sprintf("expected to not have: {%s, %s: %s}", expected.Id, expected.Path, expected.Hash)
+}
+
+func NewTestingFile() *mock_model.MockIdentifiableHashedFile {
+	return NewFile(testFileId)
+}
+
+func NewFile(id string) *mock_model.MockIdentifiableHashedFile {
+	file := mock_model.NewMockIdentifiableHashedFile(gomock.NewController(GinkgoT()))
+	file.EXPECT().Path().AnyTimes().Return(testFilePath)
+	file.EXPECT().Hash().AnyTimes().Return(testFileHash)
+	file.EXPECT().ChangeId().AnyTimes().Return(id)
+
+	return file
 }

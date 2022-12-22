@@ -141,20 +141,18 @@ func (c *Connection) Upload(file model.FileWithContent) (string, error) {
 	return *arch.ArchiveId, nil
 }
 
-func (c *Connection) getInventoryJobOutput() ([]byte, error) {
-	job, err := c.FindNewestInventoryJob()
-	if err != nil {
-		return nil, err
-	}
-
-	if job == nil {
+func (c *Connection) awaitJobCompletion(inputJob *glacier.JobDescription) (*glacier.JobDescription, error) {
+	if inputJob == nil {
 		return nil, errors.New("there are no running or completed inventory jobs to print")
 	}
+
+	job := inputJob
+	var err error
 
 	for job.StatusCode == nil || *job.StatusCode == "InProgress" {
 		fmt.Printf(`job [%s] "%s" has status %s
 `, flatString(job.JobId), flatString(job.JobDescription), flatString(job.StatusCode))
-		job, err = c.FindNewestInventoryJob()
+		job, err = c.describeJob(job.JobId)
 		if err != nil {
 			return nil, err
 		}
@@ -162,10 +160,24 @@ func (c *Connection) getInventoryJobOutput() ([]byte, error) {
 	}
 
 	if *job.StatusCode == "Failed" {
-		return nil, fmt.Errorf("inventory job failed: %s", flatString(job.StatusMessage))
+		return nil, fmt.Errorf("job failed: %s", flatString(job.StatusMessage))
 	}
 
-	return c.GetInventoryJobOutput(*job.JobId)
+	return job, nil
+}
+
+func (c *Connection) getInventoryJobOutput() ([]byte, error) {
+	job, err := c.FindNewestInventoryJob()
+	if err != nil {
+		return nil, err
+	}
+
+	job, err = c.awaitJobCompletion(job)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.GetJobOutput(*job.JobId)
 }
 
 func (c *Connection) PrintInventory() error {
@@ -178,12 +190,7 @@ func (c *Connection) PrintInventory() error {
 }
 
 func (c *Connection) FindNewestInventoryJob() (*glacier.JobDescription, error) {
-	input := glacier.ListJobsInput{
-		AccountId: &c.accountId,
-		VaultName: &c.vaultName,
-	}
-
-	jobs, err := c.glacier.ListJobs(&input)
+	jobs, err := c.listAllJobs()
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +198,7 @@ func (c *Connection) FindNewestInventoryJob() (*glacier.JobDescription, error) {
 	var newest *glacier.JobDescription
 	var newestCreation time.Time
 
-	for _, job := range jobs.JobList {
+	for _, job := range jobs {
 		creation := parseCreationDate(job.CreationDate)
 		if job.InventoryRetrievalParameters != nil && creation.After(newestCreation) {
 			newest = job
@@ -215,37 +222,48 @@ func parseCreationDate(date *string) time.Time {
 	return parsed
 }
 
-func (c *Connection) CreateInventoryJob() (*glacier.JobDescription, error) {
-	input := glacier.InitiateJobInput{
-		AccountId: &c.accountId,
-		VaultName: &c.vaultName,
-		JobParameters: &glacier.JobParameters{
-			Description: aws.String("Update inventory"),
-			Format:      aws.String("JSON"),
-			Type:        aws.String("inventory-retrieval"),
-		},
+func (c *Connection) describeJob(jobId *string) (*glacier.JobDescription, error) {
+	if jobId == nil {
+		return nil, nil
 	}
-
-	output, err := c.glacier.InitiateJob(&input)
-	if err != nil {
-		return nil, err
-	}
-
 	describe := glacier.DescribeJobInput{
 		AccountId: &c.accountId,
 		VaultName: &c.vaultName,
-		JobId:     output.JobId,
+		JobId:     jobId,
 	}
 
 	job, err := c.glacier.DescribeJob(&describe)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get decription for job: %w", err)
 	}
 
-	return job, err
+	return job, nil
 }
 
-func (c *Connection) GetInventoryJobOutput(jobId string) ([]byte, error) {
+func (c *Connection) createJob(parameters glacier.JobParameters) (*glacier.JobDescription, error) {
+	input := glacier.InitiateJobInput{
+		AccountId:     &c.accountId,
+		VaultName:     &c.vaultName,
+		JobParameters: &parameters,
+	}
+
+	output, err := c.glacier.InitiateJob(&input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create job: %w", err)
+	}
+
+	return c.describeJob(output.JobId)
+}
+
+func (c *Connection) CreateInventoryJob() (*glacier.JobDescription, error) {
+	return c.createJob(glacier.JobParameters{
+		Description: aws.String("Update inventory"),
+		Format:      aws.String("JSON"),
+		Type:        aws.String("inventory-retrieval"),
+	})
+}
+
+func (c *Connection) GetJobAwsOutput(jobId string) (*glacier.GetJobOutputOutput, error) {
 	input := glacier.GetJobOutputInput{
 		AccountId: &c.accountId,
 		VaultName: &c.vaultName,
@@ -253,6 +271,15 @@ func (c *Connection) GetInventoryJobOutput(jobId string) ([]byte, error) {
 	}
 
 	output, err := c.glacier.GetJobOutput(&input)
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func (c *Connection) GetJobOutput(jobId string) ([]byte, error) {
+	output, err := c.GetJobAwsOutput(jobId)
 	if err != nil {
 		return nil, err
 	}
@@ -274,6 +301,99 @@ func (c *Connection) getInventory() (inventory, error) {
 	}
 
 	return i, nil
+}
+
+func (c *Connection) CreateArchiveJob(file model.IdentifiableHashedFile, options ArchiveRetrievalOptions) (*glacier.JobDescription, error) {
+	return c.createJob(glacier.JobParameters{
+		Description: aws.String(file.Path()),
+		ArchiveId:   aws.String(file.ChangeId()),
+		Tier:        aws.String(string(options.Tier)),
+		Type:        aws.String("archive-retrieval"),
+	})
+}
+
+func (c *Connection) listAllJobs() ([]*glacier.JobDescription, error) {
+	var result []*glacier.JobDescription
+	var input = glacier.ListJobsInput{
+		AccountId: &c.accountId,
+		VaultName: &c.vaultName,
+	}
+	var err error
+	var jobs *glacier.ListJobsOutput
+
+	for jobs == nil || jobs.Marker != nil {
+		if jobs != nil {
+			input.Marker = jobs.Marker
+		}
+		jobs, err = c.glacier.ListJobs(&input)
+
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, jobs.JobList...)
+	}
+
+	return result, nil
+}
+
+func (c *Connection) findJobForFile(file model.IdentifiableHashedFile) (*glacier.JobDescription, error) {
+	jobs, err := c.listAllJobs()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, job := range jobs {
+		if *job.ArchiveId == file.ChangeId() {
+			return job, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func (c *Connection) FindOrCreateArchiveJob(file model.IdentifiableHashedFile, options ArchiveRetrievalOptions) (*glacier.JobDescription, error) {
+	existingJob, err := c.findJobForFile(file)
+	if err != nil {
+		return nil, err
+	}
+
+	if existingJob != nil {
+		return existingJob, nil
+	}
+
+	return c.CreateArchiveJob(file, options)
+}
+
+func (c *Connection) LoadContentFromGlacier(file model.IdentifiableHashedFile) (model.FileWithContent, error) {
+	job, err := c.findJobForFile(file)
+	if err != nil {
+		return nil, err
+	}
+
+	if job == nil {
+		return nil, fmt.Errorf("there is no retrieval job for file %s, %s", file.Path(), file.ChangeId())
+	}
+
+	job, err = c.awaitJobCompletion(job)
+	if err != nil {
+		return nil, err
+	}
+
+	openContent := func() (io.ReadCloser, error) {
+		output, err := c.GetJobAwsOutput(flatString(job.JobId))
+		if err != nil {
+			return nil, err
+		}
+
+		return output.Body, nil
+	}
+
+	return archiveLoader{
+		openContent:            openContent,
+		jobId:                  flatString(job.JobId),
+		IdentifiableHashedFile: file,
+	}, nil
 }
 
 func (c *Connection) ListInventoryAllFiles() ([]model.IdentifiableHashedFile, error) {

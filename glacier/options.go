@@ -13,3 +13,24 @@ type VaultConfig struct {
 func (c VaultConfig) credentials() *credentials.Credentials {
 	return credentials.NewStaticCredentials(c.KeyId, c.KeySecret, "")
 }
+
+type RetrievalTier string
+
+const (
+	TierExpedited RetrievalTier = "Expedited"
+	TierStandard  RetrievalTier = "Standard"
+	TierBulk      RetrievalTier = "Bulk"
+)
+
+type ArchiveRetrievalOptions struct {
+	Tier RetrievalTier `_:"
+	                   " env:"RETRIEVAL_TIER" _:"
+	                   " default:"Standard" _:"
+	                   " enum:"Expedited,Standard,Bulk" _:"
+	                   " help:"Class of retrieval
+	* Expedited - quick and expensive - retrieval job finishes up to 5 minutes
+	* Standard - moderate cost and retrieval times - up to 5 hours
+	* Bulk - cost effective - up to 12 hours
+
+For more info see https://docs.aws.amazon.com/amazonglacier/latest/dev/api-initiate-job-post.html"`
+}

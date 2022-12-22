@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/alecthomas/kong"
 	"github.com/mrdunski/accumulation-zone/cmd/commit"
+	"github.com/mrdunski/accumulation-zone/cmd/data"
 	"github.com/mrdunski/accumulation-zone/cmd/index"
 	"github.com/mrdunski/accumulation-zone/cmd/inventory"
 	"github.com/mrdunski/accumulation-zone/cmd/ls"
@@ -24,6 +25,7 @@ type CommandInput struct {
 
 	Recover struct {
 		Index index.RecoverCmd `cmd:"" help:"Recovers index file from glacier"`
+		Data  data.RecoverCmd  `cmd:"" help:"Recovers data from glacier"`
 	} `cmd:"" help:"Various backup recovery options." group:"Recover"`
 }
 
