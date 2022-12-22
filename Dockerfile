@@ -1,6 +1,6 @@
 FROM golang as test
 
-RUN go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@v2.5.1 \
+RUN go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@v2.6.1 \
     && go install github.com/golang/mock/mockgen@v1.6.0 \
     && go install github.com/t-yuki/gocover-cobertura@latest
 
@@ -29,7 +29,8 @@ FROM golang
 WORKDIR /src
 COPY --from=builder /accumulation-zone/accumulation-zone /src/
 
-ENV PORT 80
+VOLUME /data
+ENV PATH_TO_BACKUP /data
 
 ENTRYPOINT ["/src/accumulation-zone"]
 
