@@ -103,7 +103,7 @@ ginkgo -r
 
 ## Important notice
 
-Wise man once said: if you don't test your backup, you don't have a backup.
+A wise man once said: if you don't test your backup, you don't have a backup.
 
-Please be careful when using this application to store important data. 
+Please be careful when using this application to handle important data. 
 Before using it, verify if it works correctly for your use case.
