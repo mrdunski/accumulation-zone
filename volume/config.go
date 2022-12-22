@@ -1,4 +1,4 @@
-package directory
+package volume
 
 import (
 	"fmt"
@@ -8,13 +8,13 @@ import (
 	"path"
 )
 
-type Directory struct {
-	Path      string   `arg:"" env:"PATH_TO_SYNCHRONIZE" name:"" help:"Path to synchronize." type:"path"`
-	IndexFile string   `help:"File where synchronisation data will be kept." optional:"" default:".changes.log"`
-	Excludes  []string `name:"exclude" help:"Exclude some files and directories by name" optional:"" sep:"none"`
+type Volume struct {
+	Path      string   `arg:"" env:"PATH_TO_BACKUP" help:"Path to synchronize." type:"path" group:"Volume"`
+	IndexFile string   `help:"File where synchronisation data will be kept." optional:"" default:".changes.log" group:"Volume"`
+	Excludes  []string `name:"exclude" env:"BACKUP_EXCLUDES" help:"Exclude some files and directories by name" optional:"" sep:"none" group:"Volume"`
 }
 
-func (c Directory) allExcludes() []string {
+func (c Volume) allExcludes() []string {
 	var excludes []string
 	excludes = append(excludes, c.IndexFile)
 	if len(c.Excludes) > 0 {
@@ -24,7 +24,7 @@ func (c Directory) allExcludes() []string {
 	return excludes
 }
 
-func (c Directory) GetChanges() (model.Changes, index.Index, error) {
+func (c Volume) GetChanges() (model.Changes, index.Index, error) {
 	tree, err := files.NewLoader(c.Path, c.allExcludes()...).LoadTree()
 	if err != nil {
 		return model.Changes{}, index.Index{}, fmt.Errorf("failed to load tree {%s}: %w", c.Path, err)
@@ -38,7 +38,7 @@ func (c Directory) GetChanges() (model.Changes, index.Index, error) {
 	return idx.CalculateChanges(tree), idx, nil
 }
 
-func (c Directory) CreateIndex() (index.Index, error) {
+func (c Volume) CreateIndex() (index.Index, error) {
 	idx, err := index.LoadIndexFile(path.Join(c.Path, c.IndexFile))
 	if err != nil {
 		return index.Index{}, fmt.Errorf("failed to load changes file {%s/%s}: %w", c.Path, c.IndexFile, err)
@@ -47,6 +47,6 @@ func (c Directory) CreateIndex() (index.Index, error) {
 	return idx, nil
 }
 
-func (c Directory) SaveFile(file model.FileWithContent) error {
+func (c Volume) SaveFile(file model.FileWithContent) error {
 	return files.NewLoader(c.Path, c.allExcludes()...).Save(file)
 }

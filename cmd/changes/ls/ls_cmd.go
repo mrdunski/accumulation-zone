@@ -2,11 +2,11 @@ package ls
 
 import (
 	"fmt"
-	"github.com/mrdunski/accumulation-zone/directory"
+	"github.com/mrdunski/accumulation-zone/volume"
 )
 
 type Cmd struct {
-	directory.Directory
+	volume.Volume
 }
 
 func (c Cmd) Run() error {

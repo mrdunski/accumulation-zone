@@ -2,12 +2,12 @@ package upload
 
 import (
 	"fmt"
-	"github.com/mrdunski/accumulation-zone/directory"
 	"github.com/mrdunski/accumulation-zone/glacier"
+	"github.com/mrdunski/accumulation-zone/volume"
 )
 
 type Cmd struct {
-	directory.Directory
+	volume.Volume
 	glacier.VaultConfig
 }
 

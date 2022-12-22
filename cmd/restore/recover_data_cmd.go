@@ -1,19 +1,19 @@
-package data
+package restore
 
 import (
 	"fmt"
-	"github.com/mrdunski/accumulation-zone/directory"
 	"github.com/mrdunski/accumulation-zone/glacier"
 	"github.com/mrdunski/accumulation-zone/model"
+	"github.com/mrdunski/accumulation-zone/volume"
 )
 
-type RecoverCmd struct {
-	directory.Directory
+type DataCmd struct {
+	volume.Volume
 	glacier.VaultConfig
 	glacier.ArchiveRetrievalOptions
 }
 
-func (c RecoverCmd) Run() error {
+func (c DataCmd) Run() error {
 	connection, err := glacier.OpenConnection(c.VaultConfig)
 	if err != nil {
 		return err
