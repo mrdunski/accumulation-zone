@@ -286,7 +286,7 @@ var _ = Describe("Connection", func() {
 		})
 	})
 
-	Context("fixture of inventory job output", func() {
+	Context("with fixture of glacier inventory", func() {
 
 		BeforeEach(func() {
 			_, f, _, _ := runtime.Caller(0)
@@ -304,8 +304,8 @@ var _ = Describe("Connection", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(files).To(HaveLen(35))
-			Expect(files).To(ContainElement(MathingFile{Path: "Screenshot_1586941714.png", Hash: "245a22d183de84e2844712706570d8d26ff1c4a089bd122534bdc2c9159e7587", Id: "Ggg-H3s-U09N49_dPuFmh80xLYI6kaoqtqPfY9KuYebiW0FVN6OIQBFNBpsh2iR8RonVEdR8hV1Uzuw0mLUTN5SiOG-F8gIdtF3KjnnHUqajp2KOlT0B7XERr501T6KN-bN6dsETgg"}))
-			Expect(files).To(ContainElement(MathingFile{Path: "Screenshot_1586941714.png", Hash: "245a22d183de84e2844712706570d8d26ff1c4a089bd122534bdc2c9159e7587", Id: "JOyWdcP28gbjIa1I7auPbn6nTjC7XiHVmX8R0mzvxmL0THzdrr_LGFRDfyqC6jVoRn6x9AgGYAWZIt5DAch6tIVYvLnqZkzlyVQ2PguieuFkUGJlAzWf8PYz3mou_SAvO9oRgGgHtQ"}))
+			Expect(files).To(ContainElement(MatchingFile{Path: "Screenshot_1586941714.png", Hash: "245a22d183de84e2844712706570d8d26ff1c4a089bd122534bdc2c9159e7587", Id: "Ggg-H3s-U09N49_dPuFmh80xLYI6kaoqtqPfY9KuYebiW0FVN6OIQBFNBpsh2iR8RonVEdR8hV1Uzuw0mLUTN5SiOG-F8gIdtF3KjnnHUqajp2KOlT0B7XERr501T6KN-bN6dsETgg"}))
+			Expect(files).To(ContainElement(MatchingFile{Path: "Screenshot_1586941714.png", Hash: "245a22d183de84e2844712706570d8d26ff1c4a089bd122534bdc2c9159e7587", Id: "JOyWdcP28gbjIa1I7auPbn6nTjC7XiHVmX8R0mzvxmL0THzdrr_LGFRDfyqC6jVoRn6x9AgGYAWZIt5DAch6tIVYvLnqZkzlyVQ2PguieuFkUGJlAzWf8PYz3mou_SAvO9oRgGgHtQ"}))
 		})
 
 		It("list newest inventory files", func() {
@@ -313,10 +313,10 @@ var _ = Describe("Connection", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(files).To(HaveLen(8))
-			Expect(files).To(ContainElement(MathingFile{Path: "dir/testfile1", Hash: "26637da1bd793f9011a3d304372a9ec44e36cc677d2bbfba32a2f31f912358fe", Id: "0rr2-lnYot72W0eJXFLbjL2U-E6Vx3KwL8NfrnvR6PO2J7lPfGYpyX95bfSTSOFBY47lwyssFyUBONyQAV5vM0mdvI76C54Mr6wB1swPyrTwHN4cdwwAAN_LKvf82hJbDC5qOSL2OA"}))
+			Expect(files).To(ContainElement(MatchingFile{Path: "dir/testfile1", Hash: "26637da1bd793f9011a3d304372a9ec44e36cc677d2bbfba32a2f31f912358fe", Id: "0rr2-lnYot72W0eJXFLbjL2U-E6Vx3KwL8NfrnvR6PO2J7lPfGYpyX95bfSTSOFBY47lwyssFyUBONyQAV5vM0mdvI76C54Mr6wB1swPyrTwHN4cdwwAAN_LKvf82hJbDC5qOSL2OA"}))
 		})
 
-		Describe("integration", func() {
+		Describe("interacting with index", func() {
 			var testDir string
 			var idxFile *os.File
 			BeforeEach(func() {
@@ -427,13 +427,13 @@ func (f FileWithChangeId) ChangeId() string {
 	return f.changeId
 }
 
-type MathingFile struct {
+type MatchingFile struct {
 	Path string
 	Hash string
 	Id   string
 }
 
-func (expected MathingFile) Match(actual interface{}) (bool, error) {
+func (expected MatchingFile) Match(actual interface{}) (bool, error) {
 	if hashFile, ok := actual.(model.IdentifiableHashedFile); ok {
 		return hashFile.Hash() == expected.Hash && hashFile.Path() == expected.Path && hashFile.ChangeId() == expected.Id, nil
 	}
@@ -441,11 +441,11 @@ func (expected MathingFile) Match(actual interface{}) (bool, error) {
 	return false, fmt.Errorf("unexpected type: %v", actual)
 }
 
-func (expected MathingFile) FailureMessage(actual interface{}) string {
+func (expected MatchingFile) FailureMessage(actual interface{}) string {
 	hashFile := actual.(model.IdentifiableHashedFile)
 	return fmt.Sprintf("expected: {%s, %s: %s} got {%s, %s: %s}", expected.Id, expected.Path, expected.Hash, hashFile.ChangeId(), hashFile.Path(), hashFile.Hash())
 }
 
-func (expected MathingFile) NegatedFailureMessage(_ interface{}) string {
+func (expected MatchingFile) NegatedFailureMessage(_ interface{}) string {
 	return fmt.Sprintf("expected to not have: {%s, %s: %s}", expected.Id, expected.Path, expected.Hash)
 }
