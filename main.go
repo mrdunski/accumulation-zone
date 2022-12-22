@@ -19,6 +19,7 @@ type CommandInput struct {
 	Inventory struct {
 		Retrieve inventory.RetrieveCmd `cmd:"" help:"Starts retrieval job for inventory."`
 		Print    inventory.PrintCmd    `cmd:"" help:"Awaits latest job completion and prints inventory."`
+		Purge    inventory.PurgeCmd    `cmd:"" help:"DANGER: removes all archives from vault. It requires existing retrieval job (in progress or completed)."`
 	} `cmd:"" help:"Admin operations on glacier inventory." group:"Manage Glacier Inventory"`
 
 	Recover struct {

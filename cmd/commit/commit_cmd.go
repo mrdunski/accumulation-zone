@@ -7,7 +7,7 @@ import (
 
 type Cmd struct {
 	directory.Directory
-	IUnderstandConsequencesOfForceCommit bool `required:"" hidden:"" aliases:"force"`
+	IUnderstandConsequencesOfForceCommit bool `required:"" hidden:""`
 }
 
 func (c Cmd) Run() error {
