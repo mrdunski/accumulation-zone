@@ -6,6 +6,13 @@ AWS Glacier is reliable, cost-effective and high-performant backup.
 
 This application operates directly with AWS Glacier and sends incremental updates to cold storage. It uses local index file to track file changes and sends only updates.
 
+## Before start
+
+To use AZ, you need to set up your AWS account first. You will need the following:
+1. [AWS account](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/)
+2. [Glacier Vault](https://docs.aws.amazon.com/amazonglacier/latest/dev/getting-started-create-vault.html)
+3. [IAM Access Key](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/)
+
 ## Backup and restore
 
 Choose your option
@@ -93,3 +100,10 @@ or use ginkgo
 go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@latest
 ginkgo -r
 ```
+
+## Important notice
+
+Wise man once said: if you don't test your backup, you don't have a backup.
+
+Please be careful when using this application to store important data. 
+Before using it, verify if it works correctly for your use case.
