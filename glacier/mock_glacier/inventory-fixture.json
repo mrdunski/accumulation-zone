@@ -1,0 +1,251 @@
+{
+  "VaultARN": "arn:aws:glacier:eu-central-1:867810511372:vaults/test-vault",
+  "InventoryDate": "2022-11-21T07:12:05Z",
+  "ArchiveList": [
+    {
+      "ArchiveId": "Rb9i8PA9BP1px23fPxO7d4GGvQywhQO8pZG9tlOEn5EpQVfLBwY9wpuv8cr5Xql0bVwCqxE08085k_qMEl3mQRGxQVdT06172DCH3pcZatiD8TAe6fcuff1qP-Abwu9pt4E7qDjeeQ",
+      "ArchiveDescription": "dir/testfile1",
+      "CreationDate": "2022-11-20T00:43:08Z",
+      "Size": 11,
+      "SHA256TreeHash": "05e8fdb3598f91bcc3ce41a196e587b4592c8cdfc371c217274bfda2d24b1b4e"
+    },
+    {
+      "ArchiveId": "cUrGm0xKN93x1koGyxgYyIZf3tGG58dMvhpQDXCaA_kJdSi3HDN77GkMMyf8Zr5iPSe0tzo6ACWx1TCqW5oIFDNFhlcWrBRj4TGlz8ok4FfmspFjhTQdFfJYngOqt6SaSlU_a-5Xjg",
+      "ArchiveDescription": "dir/testfile2",
+      "CreationDate": "2022-11-20T00:43:08Z",
+      "Size": 11,
+      "SHA256TreeHash": "26637da1bd793f9011a3d304372a9ec44e36cc677d2bbfba32a2f31f912358fe"
+    },
+    {
+      "ArchiveId": "0rr2-lnYot72W0eJXFLbjL2U-E6Vx3KwL8NfrnvR6PO2J7lPfGYpyX95bfSTSOFBY47lwyssFyUBONyQAV5vM0mdvI76C54Mr6wB1swPyrTwHN4cdwwAAN_LKvf82hJbDC5qOSL2OA",
+      "ArchiveDescription": "dir/testfile1",
+      "CreationDate": "2022-11-20T00:45:36Z",
+      "Size": 11,
+      "SHA256TreeHash": "26637da1bd793f9011a3d304372a9ec44e36cc677d2bbfba32a2f31f912358fe"
+    },
+    {
+      "ArchiveId": "YG7ZAdyWPEatd_-ia6YcHcth4l1UBpcmK-U8RMFjJK8J-NHHrOpxvVFEyzU1Pmk0yF79HSdMY6yIjWC2KSAfixIF5t5jB7fEVySZj5RiMjegfB16CeFXv2si6HbdrWJb2BpYiKY23g",
+      "ArchiveDescription": "dir/testfile2",
+      "CreationDate": "2022-11-20T00:45:58Z",
+      "Size": 11,
+      "SHA256TreeHash": "26637da1bd793f9011a3d304372a9ec44e36cc677d2bbfba32a2f31f912358fe"
+    },
+    {
+      "ArchiveId": "COR8cu_iF4e0e0BE_wwhEOOAh3tsXPJ5QZbPRvPhgZEkz--Xx7zwKfpuAs8G04Xj8QIFJycVp_9d9pXMBrsnqOoxpaOCf3rZPnZ_VfTPHrKPo2ViQdd5xJU46BqlKR1kpvkz7E7oSg",
+      "ArchiveDescription": "testfile1",
+      "CreationDate": "2022-11-20T00:47:34Z",
+      "Size": 11,
+      "SHA256TreeHash": "05e8fdb3598f91bcc3ce41a196e587b4592c8cdfc371c217274bfda2d24b1b4e"
+    },
+    {
+      "ArchiveId": "MeDbu-4YDySr5Rbf_aJU15uNv1UVKUcstPzHStx_jzqEVVAIF5z4efQg3eFhLcSOUgDXwDqAEF4KK39vfPOD7EURdNvJ9G7F7hZzwTeAF3odoMwyhsD7qn0RvAJPYKaZkOLuM3Hwaw",
+      "ArchiveDescription": "testfile2",
+      "CreationDate": "2022-11-20T00:47:34Z",
+      "Size": 11,
+      "SHA256TreeHash": "26637da1bd793f9011a3d304372a9ec44e36cc677d2bbfba32a2f31f912358fe"
+    },
+    {
+      "ArchiveId": "_JSz0EdtZDmG1-Cxzxk63QYTydKIi1seiE1E2L8Qu50ltRfj6fuGh1vRgiwc5YmWzj1mYJqQBZDjKUjuRduwoyZvCEpG8jhXhwvrnf5n8xH1oACvTvVa7S0WIyeLbDw1tbXSUSk7DQ",
+      "ArchiveDescription": "Screenshot_1586941714.png",
+      "CreationDate": "2022-11-20T01:15:41Z",
+      "Size": 60252,
+      "SHA256TreeHash": "245a22d183de84e2844712706570d8d26ff1c4a089bd122534bdc2c9159e7587"
+    },
+    {
+      "ArchiveId": "YU3Z__qA4ChhQRR25SLzq8HP6sYeJvMuUw1UOOtSG7UsAdUcRPYC-_GAzmBCt4fqVh57QuhlzAwOUysjZzN1QWffjjk2wR7HRDyDjYxNb3w3GfZDKzNDBcu0xetRc6wuoWf385GB8w",
+      "ArchiveDescription": "Screenshot_1586941741.png",
+      "CreationDate": "2022-11-20T01:15:41Z",
+      "Size": 77895,
+      "SHA256TreeHash": "4bf7329da41357468a1d5dfae331a3106a2d2d83122048a163f5275686a98039"
+    },
+    {
+      "ArchiveId": "r0G0rVKi7-PNZzGh_6Vi7WmUs6MiqhHKSNRYOVqn8DvnsW2bJLQ3amVmDvlx8ETpJxUQNkqbNJR3xVEEe2hd0Cpt7NkUmCGeylyCc9IkMlk1cDhzNDQKUjKmNgv_bGlxO1JPz-hFDg",
+      "ArchiveDescription": "plasma-org.kde.plasma.desktop-appletsrc",
+      "CreationDate": "2022-11-20T01:15:42Z",
+      "Size": 12223,
+      "SHA256TreeHash": "7f9c29f3c2bb4922423b7a6d56acedc095183edacfb20e2fda95c2819f51ef4b"
+    },
+    {
+      "ArchiveId": "7lz4Eea7EFQm_VqSNWDjLVjR2e9kSO2O0mHnnyYr-2d0ffmdaf5AuNqBqDp79__ZcsxtZrD9M5-RUMjjTb-Q8HgjNF7JDktz9xO_IlPAvkPw-D74wX3Pv-6-sGMYLZkhVkfI-IK--w",
+      "ArchiveDescription": "Screenshot_1586942681.png",
+      "CreationDate": "2022-11-20T01:15:42Z",
+      "Size": 66579,
+      "SHA256TreeHash": "36d427cdcbeb4e759ffca26973fca670ed9b474c2721f41ccf77c8e0368afcc6"
+    },
+    {
+      "ArchiveId": "r8ZvQRbtZoXqgipB83cxWOQcdB--4R_1iLf-Y_nN3eG0iGqIFBVuoLwbNhsDlj3idbl84Cl9J1y5hfD8OzuPRAKZeMASsy6WZWa_KoffcEIIoTqjLpA9IMD7A4571ayqvVXGCzcctA",
+      "ArchiveDescription": "Screenshot_1586942681.png",
+      "CreationDate": "2022-11-20T01:27:19Z",
+      "Size": 66579,
+      "SHA256TreeHash": "36d427cdcbeb4e759ffca26973fca670ed9b474c2721f41ccf77c8e0368afcc6"
+    },
+    {
+      "ArchiveId": "VlJe2cowTdHYKRUYtETLtZr5QqPrlSaFlokzqnufL-YEvdd7iuXNViB5JHsMig2MGdTU1ivwVO37DUgyK2fY-cFYlRRNxVjWVxKfEBlFmzxPPZxyT58oXbzEWSxuYKK2kiJk2OLQ1w",
+      "ArchiveDescription": "Screenshot_1586941714.png",
+      "CreationDate": "2022-11-20T01:27:19Z",
+      "Size": 60252,
+      "SHA256TreeHash": "245a22d183de84e2844712706570d8d26ff1c4a089bd122534bdc2c9159e7587"
+    },
+    {
+      "ArchiveId": "akGLrr71YkFCXBUdOxvmhdD8rBDMlUcm0ysdGRWd2lud9lBb5YarV9uVZI6jDJSka2N_6BKnp1TQX-AEY2oo3xHZpuQslKsqc79GRIVHHpA7BAjIeBrQvaingo3LnGVzy_gLKtWzvg",
+      "ArchiveDescription": "Screenshot_1586941741.png",
+      "CreationDate": "2022-11-20T01:27:19Z",
+      "Size": 77895,
+      "SHA256TreeHash": "4bf7329da41357468a1d5dfae331a3106a2d2d83122048a163f5275686a98039"
+    },
+    {
+      "ArchiveId": "sr5BVkApeqnx08s1uMjKZe33i1-dh8vfLd6Srm6ZM3rPZZJ6YFl0snPHXZbR_EbtqyzqSx0vYTRInvPtQWuh4Xlr79te2ZleuPdvVTFxVCwC10ODXk-Q4kl0xpmQ0Hf8w8I4ajg9XA",
+      "ArchiveDescription": "plasma-org.kde.plasma.desktop-appletsrc",
+      "CreationDate": "2022-11-20T01:27:20Z",
+      "Size": 12223,
+      "SHA256TreeHash": "7f9c29f3c2bb4922423b7a6d56acedc095183edacfb20e2fda95c2819f51ef4b"
+    },
+    {
+      "ArchiveId": "h9CWu-SBUfyKRiQHkSksLuxp67z7XBR-H4J2aWudelU3TatRgaJn8BiftveetO6g8yzU7WHri4w-6wf0Uc2nIV_oYJPLCeoB7XScnPD5Rf1pSqMI0H-4XnqQnijPvW3Xolh4qX03_g",
+      "ArchiveDescription": "Screenshot_1586942681.png",
+      "CreationDate": "2022-11-20T01:27:51Z",
+      "Size": 66579,
+      "SHA256TreeHash": "36d427cdcbeb4e759ffca26973fca670ed9b474c2721f41ccf77c8e0368afcc6"
+    },
+    {
+      "ArchiveId": "oiUQUrLeOTW7ccewYmnpMmB87jpNp_1bVliQJBe2jnDF9RA77Bfdlm68aaR0VvKOQ7DomysiZOHG6kBm-6_G7G_ih_MkusGpc7fBwvYYI-Jdklsjli8hy5tdSMFdx5fXOvnMDZa80Q",
+      "ArchiveDescription": "Screenshot_1586941714.png",
+      "CreationDate": "2022-11-20T01:27:51Z",
+      "Size": 60252,
+      "SHA256TreeHash": "245a22d183de84e2844712706570d8d26ff1c4a089bd122534bdc2c9159e7587"
+    },
+    {
+      "ArchiveId": "EPPL0F1bj_vKCLt5zbS_X2k-FR6ozsaZ7EhkiLCuf5HdxeOY8Tkny__00n3V_o1_t4M_JZBI6CmVXjG7ORHhlErF6QXg157IZPIs30ac6XMGuGpTl-X722-tTTFMHlbx5_gWEqV44g",
+      "ArchiveDescription": "plasma-org.kde.plasma.desktop-appletsrc",
+      "CreationDate": "2022-11-20T01:27:51Z",
+      "Size": 12223,
+      "SHA256TreeHash": "7f9c29f3c2bb4922423b7a6d56acedc095183edacfb20e2fda95c2819f51ef4b"
+    },
+    {
+      "ArchiveId": "Fon_8emZeyRSG4stYLRhG7jIx2MI_XPNwkhABwiVPhTdHEXUIhQto5j9FNVpTht52fBp-YVseOzP3xXYRQqHn9IcoY_NGL4CGY_QSHer37dFjHQHuniGvso0kjH3O8aWJidjkEWjYQ",
+      "ArchiveDescription": "Screenshot_1586941741.png",
+      "CreationDate": "2022-11-20T01:27:51Z",
+      "Size": 77895,
+      "SHA256TreeHash": "4bf7329da41357468a1d5dfae331a3106a2d2d83122048a163f5275686a98039"
+    },
+    {
+      "ArchiveId": "GCa8IYKaWIpsu0DZ3cYQdOHpY909IprF3pfsmZICQw7nCjEPJC8MXfJLagj4cWSOSL8YYy3kpktYPb-DjSfhQHQq34h8zzAf-2ysDBjn_4upTUCK5quBYVmxN2Cs-PatHxoPDrWYYw",
+      "ArchiveDescription": "Screenshot_1586942681.png",
+      "CreationDate": "2022-11-20T01:28:06Z",
+      "Size": 66579,
+      "SHA256TreeHash": "36d427cdcbeb4e759ffca26973fca670ed9b474c2721f41ccf77c8e0368afcc6"
+    },
+    {
+      "ArchiveId": "JOyWdcP28gbjIa1I7auPbn6nTjC7XiHVmX8R0mzvxmL0THzdrr_LGFRDfyqC6jVoRn6x9AgGYAWZIt5DAch6tIVYvLnqZkzlyVQ2PguieuFkUGJlAzWf8PYz3mou_SAvO9oRgGgHtQ",
+      "ArchiveDescription": "Screenshot_1586941714.png",
+      "CreationDate": "2022-11-20T01:28:06Z",
+      "Size": 60252,
+      "SHA256TreeHash": "245a22d183de84e2844712706570d8d26ff1c4a089bd122534bdc2c9159e7587"
+    },
+    {
+      "ArchiveId": "NEKjUz8H_dk7b8RNTY-YeURsZ90nSO2_qO5mWBn7ezMrwwPvC1AFiTRxIxGoO6cAathh1oAR_5eWwfcfOhJJYjUaHFFpnSwC7jeK1jjHwiuT-ElqJwddjbeozyT2d76gBObulB7nMg",
+      "ArchiveDescription": "Screenshot_1586941741.png",
+      "CreationDate": "2022-11-20T01:28:06Z",
+      "Size": 77895,
+      "SHA256TreeHash": "4bf7329da41357468a1d5dfae331a3106a2d2d83122048a163f5275686a98039"
+    },
+    {
+      "ArchiveId": "bhU0UA9Tz-avXKDkEIXzMNlPY7m7kPV8ziG8Hw7F2trJOXKyPxnbqbB2-KSx4mPOuJ5QIt83aUpx9Tzndl69LdQyaQKxxZHfOHUouPHfKtRfYumEKD--zcoQ-N8mEfjhgK31YbDmBw",
+      "ArchiveDescription": "plasma-org.kde.plasma.desktop-appletsrc",
+      "CreationDate": "2022-11-20T01:28:06Z",
+      "Size": 12223,
+      "SHA256TreeHash": "7f9c29f3c2bb4922423b7a6d56acedc095183edacfb20e2fda95c2819f51ef4b"
+    },
+    {
+      "ArchiveId": "xXZHP4YLkwFtTo6wMMQUw1iLK29GXAUUE7uYr1l1HDsR-H9R8TWfipECZgwDQj52JMRXeQuAEGQsm6HpYhIhhdPz-8PwnPeHfrJV1B0B1bz48rZWNy8aFHT9BE-QD4odOzH5Y5qcdQ",
+      "ArchiveDescription": "Screenshot_1586941741.png",
+      "CreationDate": "2022-11-20T01:28:24Z",
+      "Size": 77895,
+      "SHA256TreeHash": "4bf7329da41357468a1d5dfae331a3106a2d2d83122048a163f5275686a98039"
+    },
+    {
+      "ArchiveId": "Ggg-H3s-U09N49_dPuFmh80xLYI6kaoqtqPfY9KuYebiW0FVN6OIQBFNBpsh2iR8RonVEdR8hV1Uzuw0mLUTN5SiOG-F8gIdtF3KjnnHUqajp2KOlT0B7XERr501T6KN-bN6dsETgg",
+      "ArchiveDescription": "Screenshot_1586941714.png",
+      "CreationDate": "2022-11-20T01:28:24Z",
+      "Size": 60252,
+      "SHA256TreeHash": "245a22d183de84e2844712706570d8d26ff1c4a089bd122534bdc2c9159e7587"
+    },
+    {
+      "ArchiveId": "LjZDhsjNDxYS0r75VJxSkNQl1GsyFe4Ydx7NCxoToNhml-jpxAK_hbIzZW_32y8RW5o-87vyGkAkimTg6LC3EnwwSMCqpq9Yk3Xf2VMR3GCMoxJSu5reSiHUV47T_PxHy7YkMVUevw",
+      "ArchiveDescription": "Screenshot_1586942681.png",
+      "CreationDate": "2022-11-20T01:28:25Z",
+      "Size": 66579,
+      "SHA256TreeHash": "36d427cdcbeb4e759ffca26973fca670ed9b474c2721f41ccf77c8e0368afcc6"
+    },
+    {
+      "ArchiveId": "Yxncto4DZ9s-Q0kOEwNwrl6wdHJvsQ65Q5Ue41uP2vU_PVvV3XrjRmoEl-H1aakdkPywsZpl4Gq1ECZRuDg7r9oRaQINMH7j6MzyqAiu-GVIV67Qh6Mejrgbs_417J2tuJVhEXuvOg",
+      "ArchiveDescription": "plasma-org.kde.plasma.desktop-appletsrc",
+      "CreationDate": "2022-11-20T01:28:25Z",
+      "Size": 12223,
+      "SHA256TreeHash": "7f9c29f3c2bb4922423b7a6d56acedc095183edacfb20e2fda95c2819f51ef4b"
+    },
+    {
+      "ArchiveId": "mrAxv_yY9ojqOpEvDO5FgLtSJ6bpyjkakDl0mcydnqV516WubNsXBfGhnvW5JuPHKaVm7vtfoirbqIaK4yD0Cxc_FE1g-qHV-mEpLZ8Dc8xSjls4vyll4TSpmwdAGqdHDygbI9XEyQ",
+      "ArchiveDescription": "Screenshot_1586941741.png",
+      "CreationDate": "2022-11-20T08:57:42Z",
+      "Size": 77895,
+      "SHA256TreeHash": "4bf7329da41357468a1d5dfae331a3106a2d2d83122048a163f5275686a98039"
+    },
+    {
+      "ArchiveId": "6WvE3nZMvQBXT3StRTuX7xI39Q-zEkMkHbXUMWM9c5KXKJ79G5jB3JJo1v94fwUE7GvPBRl4QF_DCLqdGEPUkC1qs46k6h16gGR_mm1NzZVXBkiKZZt_tAF87zpRQ4mJb0_Za4dSow",
+      "ArchiveDescription": "Screenshot_1586942681.png",
+      "CreationDate": "2022-11-20T08:57:42Z",
+      "Size": 66579,
+      "SHA256TreeHash": "36d427cdcbeb4e759ffca26973fca670ed9b474c2721f41ccf77c8e0368afcc6"
+    },
+    {
+      "ArchiveId": "8gAG2nUReRFOLanLGgAvDeSyh8Z3ctbNu_HqPaIUXbxOQH_VTReiusOubKLhiYM44FxxA3toZJwXZNkuu8-IRtdw_Btau7Bk-FSBnKSJ8HVZZxLugP4LQRPsTrUMrhx3AeXlhbLfPQ",
+      "ArchiveDescription": "plasma-org.kde.plasma.desktop-appletsrc",
+      "CreationDate": "2022-11-20T08:57:42Z",
+      "Size": 12223,
+      "SHA256TreeHash": "7f9c29f3c2bb4922423b7a6d56acedc095183edacfb20e2fda95c2819f51ef4b"
+    },
+    {
+      "ArchiveId": "ckv-J6WZQa58T8jk-V4MiXSqXq2GObV7LKPkT0QPVBx1yUJOuDG2mHHKpYIHIm92IzJ8-g-5shcLxMK5EZ5g0zwsUISrnYgKCk14rpxWZ2FSu3lYXB0TA1XZLt_iTWlqzVqYd_O1dw",
+      "ArchiveDescription": "Screenshot_1586941714.png",
+      "CreationDate": "2022-11-20T08:57:42Z",
+      "Size": 60252,
+      "SHA256TreeHash": "245a22d183de84e2844712706570d8d26ff1c4a089bd122534bdc2c9159e7587"
+    },
+    {
+      "ArchiveId": "uGHyG6dH3tRP3MkNWLLbneYOjR8tjUhZjZ6-AF2IqVNbDSjNRgpP9F_vSP8ynAMoWLt-zCyM9ekzsCq4hyFdNNtQk4W_gs54ZSqcle8oRm1JlOmcyFNO3SsVtZQHWBDY0W8LvXwKCQ",
+      "ArchiveDescription": "Screenshot_1586941741.png",
+      "CreationDate": "2022-11-20T09:24:26Z",
+      "Size": 77895,
+      "SHA256TreeHash": "4bf7329da41357468a1d5dfae331a3106a2d2d83122048a163f5275686a98039"
+    },
+    {
+      "ArchiveId": "BTtQf8s-DfFJu8D8K0H046uBigg1S-ByOjQDpHg3DjkGoqOXyph6X92sd9uG9blVZhpfraQpxaohdGhSbfD3atto-9k_yqLOjhRZqjGV4uowEvQqJ6XbMibCPV9_IVSEIBZofcuThA",
+      "ArchiveDescription": "Screenshot_1586941714.png",
+      "CreationDate": "2022-11-20T09:24:26Z",
+      "Size": 60252,
+      "SHA256TreeHash": "245a22d183de84e2844712706570d8d26ff1c4a089bd122534bdc2c9159e7587"
+    },
+    {
+      "ArchiveId": "xzL5ziv0oFVi17Pg4-c62HNn0b2P4D13rYom8Pzkjc3Z8EJUv62_M83VdPgkNIScNHI3zcSjlXFSUJ7dvD498i5dvdAZR3cHt4-CcJBNdtS2mTFV4sD_wPvxW9RoklmvfGwlu3aMnw",
+      "ArchiveDescription": "Screenshot_1586942681.png",
+      "CreationDate": "2022-11-20T09:24:27Z",
+      "Size": 66579,
+      "SHA256TreeHash": "36d427cdcbeb4e759ffca26973fca670ed9b474c2721f41ccf77c8e0368afcc6"
+    },
+    {
+      "ArchiveId": "cUS2v_FmA9d0FesXp-HCNRfWi9A-zc5LyTEiKBXjtG0ep6swdykDSO7dF5ecCQ1zZ_fRMf4W2_ljQBKTNezh6tNhxDF1JJgVkzenpEFcJS_xQ9BhXHnyniPoDA5292ykMZIaQxZdxw",
+      "ArchiveDescription": "plasma-org.kde.plasma.desktop-appletsrc",
+      "CreationDate": "2022-11-20T09:24:27Z",
+      "Size": 12223,
+      "SHA256TreeHash": "7f9c29f3c2bb4922423b7a6d56acedc095183edacfb20e2fda95c2819f51ef4b"
+    },
+    {
+      "ArchiveId": "EDjKN-VoJ951QlTOlXNWRsiLMouhTikHifEiqRSv6xYFEQJ7GzvvWfL8riyj9HZfPJueHJisgQe9Tt-P_CLWzs17zzwnImRa1w4ByyahPte9ULf89lVcaeviaV4qB5M_L1wJZ-j5NA",
+      "ArchiveDescription": "plasma-org.kde.plasma.desktop-appletsrc",
+      "CreationDate": "2022-11-20T17:12:20Z",
+      "Size": 12223,
+      "SHA256TreeHash": "7f9c29f3c2bb4922423b7a6d56acedc095183edacfb20e2fda95c2819f51ef4b"
+    }
+  ]
+}

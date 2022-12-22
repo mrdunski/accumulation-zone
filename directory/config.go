@@ -14,7 +14,7 @@ type Directory struct {
 	Excludes  []string `name:"exclude" help:"Exclude some files and directories by name" optional:"" sep:"none"`
 }
 
-func (c Directory) GetChanges() ([]model.Change, index.Index, error) {
+func (c Directory) GetChanges() (model.Changes, index.Index, error) {
 	var excludes []string
 	excludes = append(excludes, c.IndexFile)
 	if len(c.Excludes) > 0 {
@@ -22,13 +22,22 @@ func (c Directory) GetChanges() ([]model.Change, index.Index, error) {
 	}
 	tree, err := files.NewLoader(c.Path, excludes...).LoadTree()
 	if err != nil {
-		return nil, index.Index{}, fmt.Errorf("failed to load tree {%s}: %w", c.Path, err)
+		return model.Changes{}, index.Index{}, fmt.Errorf("failed to load tree {%s}: %w", c.Path, err)
 	}
 
+	idx, err := c.CreateIndex()
+	if err != nil {
+		return model.Changes{}, idx, err
+	}
+
+	return idx.CalculateChanges(tree), idx, nil
+}
+
+func (c Directory) CreateIndex() (index.Index, error) {
 	idx, err := index.LoadIndexFile(path.Join(c.Path, c.IndexFile))
 	if err != nil {
-		return nil, index.Index{}, fmt.Errorf("failed to load changes file {%s/%s}: %w", c.Path, c.IndexFile, err)
+		return index.Index{}, fmt.Errorf("failed to load changes file {%s/%s}: %w", c.Path, c.IndexFile, err)
 	}
 
-	return idx.CalculateChanges(model.AsHashedFiles(tree)), idx, nil
+	return idx, nil
 }

@@ -1,12 +1,12 @@
 FROM golang as test
 
-RUN go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@latest
+RUN go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@v2.5.1 && go install github.com/golang/mock/mockgen@v1.6.0
 
 WORKDIR /app
 
 ADD . .
 
-RUN ginkgo --junit-report=report.xml ./...
+RUN go generate ./... && ginkgo --junit-report=report.xml ./...
 
 FROM scratch as artifacts
 COPY --from=test /app/report.xml /

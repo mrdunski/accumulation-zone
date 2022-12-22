@@ -3,6 +3,7 @@ package files
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/glacier"
+	"github.com/mrdunski/accumulation-zone/model"
 	"io"
 	"os"
 	"path"
@@ -71,7 +72,7 @@ func (l Loader) LoadFile(subPath string) (_ TreeHashedFile, err error) {
 	}, nil
 }
 
-func (l Loader) loadEntry(entrySubPath string, entry os.DirEntry) ([]TreeHashedFile, error) {
+func (l Loader) loadEntry(entrySubPath string, entry os.DirEntry) ([]model.FileWithContent, error) {
 	if l.isExcluded(entrySubPath) {
 		return nil, nil
 	}
@@ -88,17 +89,17 @@ func (l Loader) loadEntry(entrySubPath string, entry os.DirEntry) ([]TreeHashedF
 	if err != nil {
 		return nil, err
 	}
-	return []TreeHashedFile{fileHandle}, nil
+	return []model.FileWithContent{fileHandle}, nil
 }
 
-func (l Loader) loadSubPath(subPath string) ([]TreeHashedFile, error) {
+func (l Loader) loadSubPath(subPath string) ([]model.FileWithContent, error) {
 	absolutePath := path.Join(l.basePath, subPath)
 	entries, err := os.ReadDir(absolutePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []TreeHashedFile
+	var result []model.FileWithContent
 
 	for _, entry := range entries {
 		entrySubPath := path.Join(subPath, entry.Name())
@@ -114,6 +115,6 @@ func (l Loader) loadSubPath(subPath string) ([]TreeHashedFile, error) {
 	return result, nil
 }
 
-func (l Loader) LoadTree() ([]TreeHashedFile, error) {
+func (l Loader) LoadTree() ([]model.FileWithContent, error) {
 	return l.loadSubPath("")
 }

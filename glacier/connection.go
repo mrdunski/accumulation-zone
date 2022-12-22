@@ -1,4 +1,4 @@
-//go:generate mockgen -destination=mock_glacier/connection.go . Cli,FileWithContent,ChangeIdHolder
+//go:generate mockgen -destination=mock_glacier/connection.go . Cli
 package glacier
 
 import (
@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/glacier"
+	"github.com/mrdunski/accumulation-zone/index"
 	"github.com/mrdunski/accumulation-zone/model"
 	"io"
 	"time"
@@ -25,16 +26,6 @@ type Connection struct {
 	glacier   Cli
 	accountId string
 	vaultName string
-}
-
-type FileWithContent interface {
-	Content() (io.ReadCloser, error)
-	Hash() string
-	Path() string
-}
-
-type ChangeIdHolder interface {
-	ChangeId() string
 }
 
 func NewConnection(cli Cli, vaultName, accountId string) Connection {
@@ -62,13 +53,24 @@ func OpenConnection(cfg VaultConfig) (*Connection, error) {
 	}, nil
 }
 
-func (c *Connection) Process(committer model.ChangeCommitter, changes []model.Change) error {
-	for _, change := range changes {
-		id, err := c.processChange(change)
+func (c *Connection) Process(committer model.ChangeCommitter, changes model.Changes) error {
+	for _, change := range changes.Additions {
+		id, err := c.processAdd(change)
 		if err != nil {
 			return err
 		}
-		err = committer.CommitChange(id, change)
+		err = committer.CommitAdd(id, change)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, change := range changes.Deletions {
+		id, err := c.processDelete(change)
+		if err != nil {
+			return err
+		}
+		err = committer.CommitDelete(id, change)
 		if err != nil {
 			return err
 		}
@@ -77,36 +79,24 @@ func (c *Connection) Process(committer model.ChangeCommitter, changes []model.Ch
 	return nil
 }
 
-func (c *Connection) processChange(change model.Change) (string, error) {
+func (c *Connection) processAdd(change model.FileAdded) (string, error) {
+	id, err := c.Upload(change)
+	if err != nil {
+		return "", err
+	}
+	return id, nil
+}
 
-	switch change.ChangeType {
-	case model.Added:
-		fileWithContent, ok := change.HashedFile.(FileWithContent)
-		if !ok {
-			return "", errors.New("add change without content")
-		}
-		id, err := c.Upload(fileWithContent)
-		if err != nil {
-			return "", err
-		}
-		return id, nil
-	case model.Deleted:
-		changeIdHolder, ok := change.HashedFile.(ChangeIdHolder)
-		if !ok {
-			return "", errors.New("delete change without change id")
-		}
-		if changeIdHolder.ChangeId() == "" {
-			return "", nil
-		}
-		err := c.Delete(changeIdHolder.ChangeId())
-		if err != nil {
-			return "", err
-		}
-
-		return changeIdHolder.ChangeId(), nil
+func (c *Connection) processDelete(change model.FileDeleted) (string, error) {
+	if change.ChangeId() == "" {
+		return "", nil
+	}
+	err := c.Delete(change.ChangeId())
+	if err != nil {
+		return "", err
 	}
 
-	return "", fmt.Errorf("unprocessable change: %v", change)
+	return change.ChangeId(), nil
 }
 
 func (c *Connection) Delete(id string) error {
@@ -124,7 +114,7 @@ func (c *Connection) Delete(id string) error {
 	return nil
 }
 
-func (c *Connection) Upload(file FileWithContent) (string, error) {
+func (c *Connection) Upload(file model.FileWithContent) (string, error) {
 	content, err := file.Content()
 	if err != nil {
 		return "", err
@@ -151,14 +141,14 @@ func (c *Connection) Upload(file FileWithContent) (string, error) {
 	return *arch.ArchiveId, nil
 }
 
-func (c *Connection) PrintInventory() error {
+func (c *Connection) getInventoryJobOutput() ([]byte, error) {
 	job, err := c.FindNewestInventoryJob()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if job == nil {
-		return errors.New("there are no running or completed inventory jobs to print")
+		return nil, errors.New("there are no running or completed inventory jobs to print")
 	}
 
 	for job.StatusCode == nil || *job.StatusCode == "InProgress" {
@@ -166,20 +156,24 @@ func (c *Connection) PrintInventory() error {
 `, flatString(job.JobId), flatString(job.JobDescription), flatString(job.StatusCode), flatString(job.StatusMessage))
 		job, err = c.FindNewestInventoryJob()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		time.Sleep(1 * time.Second)
 	}
 
 	if *job.StatusCode == "Failed" {
-		return fmt.Errorf("inventory job failed: %s", flatString(job.StatusMessage))
+		return nil, fmt.Errorf("inventory job failed: %s", flatString(job.StatusMessage))
 	}
 
-	output, err := c.GetInventoryJobOutput(*job.JobId)
+	return c.GetInventoryJobOutput(*job.JobId)
+}
+
+func (c *Connection) PrintInventory() error {
+	output, err := c.getInventoryJobOutput()
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%v", output)
+	fmt.Printf("%s", string(output))
 	return nil
 }
 
@@ -251,7 +245,7 @@ func (c *Connection) CreateInventoryJob() (*glacier.JobDescription, error) {
 	return job, err
 }
 
-func (c *Connection) GetInventoryJobOutput(jobId string) (string, error) {
+func (c *Connection) GetInventoryJobOutput(jobId string) ([]byte, error) {
 	input := glacier.GetJobOutputInput{
 		AccountId: &c.accountId,
 		VaultName: &c.vaultName,
@@ -260,13 +254,67 @@ func (c *Connection) GetInventoryJobOutput(jobId string) (string, error) {
 
 	output, err := c.glacier.GetJobOutput(&input)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	return getBody(output)
 }
 
-func getBody(output *glacier.GetJobOutputOutput) (_ string, err error) {
+func (c *Connection) getInventory() (inventory, error) {
+	rawOutput, err := c.getInventoryJobOutput()
+
+	if err != nil {
+		return inventory{}, fmt.Errorf("failed to get newest inventory job: %w", err)
+	}
+
+	i, err := unmarshalInventory(rawOutput)
+
+	if err != nil {
+		return inventory{}, fmt.Errorf("unsupported inventory format: %w", err)
+	}
+
+	return i, nil
+}
+
+func (c *Connection) ListInventoryAllFiles() ([]model.IdentifiableHashedFile, error) {
+	i, err := c.getInventory()
+	if err != nil {
+		return nil, err
+	}
+
+	return i.asIdentifiableHashedFiles(), nil
+}
+
+func (c *Connection) ListInventoryNewestFiles() (map[string]model.IdentifiableHashedFile, error) {
+	i, err := c.getInventory()
+	if err != nil {
+		return nil, err
+	}
+
+	return i.newestHashFiles(), nil
+}
+
+func (c *Connection) AddInventoryToIndex(idx index.Index) error {
+	files, err := c.ListInventoryAllFiles()
+	if err != nil {
+		return err
+	}
+
+	err = idx.Clear()
+	if err != nil {
+		return fmt.Errorf("failed to clear index: %w", err)
+	}
+	for _, file := range files {
+		if err := idx.CommitAdd(file.ChangeId(), file); err != nil {
+			_ = idx.Clear()
+			return fmt.Errorf("failed to add to index [%s]: %w", file.Path(), err)
+		}
+	}
+
+	return nil
+}
+
+func getBody(output *glacier.GetJobOutputOutput) (_ []byte, err error) {
 	body := output.Body
 	defer func(body io.ReadCloser) {
 		err = body.Close()
@@ -274,10 +322,10 @@ func getBody(output *glacier.GetJobOutputOutput) (_ string, err error) {
 	result, err := io.ReadAll(body)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(result), nil
+	return result, nil
 }
 
 func flatString(s *string) string {

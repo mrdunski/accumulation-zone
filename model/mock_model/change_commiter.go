@@ -34,16 +34,30 @@ func (m *MockChangeCommitter) EXPECT() *MockChangeCommitterMockRecorder {
 	return m.recorder
 }
 
-// CommitChange mocks base method.
-func (m *MockChangeCommitter) CommitChange(arg0 string, arg1 model.Change) error {
+// CommitAdd mocks base method.
+func (m *MockChangeCommitter) CommitAdd(arg0 string, arg1 model.HashedFile) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CommitChange", arg0, arg1)
+	ret := m.ctrl.Call(m, "CommitAdd", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CommitChange indicates an expected call of CommitChange.
-func (mr *MockChangeCommitterMockRecorder) CommitChange(arg0, arg1 interface{}) *gomock.Call {
+// CommitAdd indicates an expected call of CommitAdd.
+func (mr *MockChangeCommitterMockRecorder) CommitAdd(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CommitChange", reflect.TypeOf((*MockChangeCommitter)(nil).CommitChange), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CommitAdd", reflect.TypeOf((*MockChangeCommitter)(nil).CommitAdd), arg0, arg1)
+}
+
+// CommitDelete mocks base method.
+func (m *MockChangeCommitter) CommitDelete(arg0 string, arg1 model.HashedFile) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CommitDelete", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CommitDelete indicates an expected call of CommitDelete.
+func (mr *MockChangeCommitterMockRecorder) CommitDelete(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CommitDelete", reflect.TypeOf((*MockChangeCommitter)(nil).CommitDelete), arg0, arg1)
 }

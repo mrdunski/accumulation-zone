@@ -4,26 +4,40 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"github.com/mrdunski/accumulation-zone/model"
 	"os"
 	"time"
 )
 
+type changeType string
+
+const (
+	fileAdded   changeType = "added"
+	fileDeleted changeType = "deleted"
+)
+
 type record struct {
-	OperationType model.ChangeType `json:"type"`
-	Path          string           `json:"path"`
-	Hash          string           `json:"hash"`
-	ChangeId      string           `json:"id"`
-	Time          time.Time        `json:"time"`
+	OperationType changeType `json:"type"`
+	Path          string     `json:"path"`
+	Hash          string     `json:"hash"`
+	ChangeId      string     `json:"id"`
+	Time          time.Time  `json:"time"`
 }
 
 type fileRecords struct {
 	filePath string
 }
 
+func (f fileRecords) clear() error {
+	if err := os.Truncate(f.filePath, 0); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (f fileRecords) add(entry Entry) error {
 	r := record{
-		OperationType: model.Added,
+		OperationType: fileAdded,
 		Path:          entry.path,
 		Hash:          entry.hash,
 		Time:          entry.recordDate,
@@ -35,7 +49,7 @@ func (f fileRecords) add(entry Entry) error {
 
 func (f fileRecords) remove(entry Entry) error {
 	r := record{
-		OperationType: model.Deleted,
+		OperationType: fileDeleted,
 		Path:          entry.path,
 		Hash:          entry.hash,
 		Time:          entry.recordDate,
@@ -87,14 +101,14 @@ func (f fileRecords) loadEntries() (_ entries, err error) {
 		}
 
 		switch r.OperationType {
-		case model.Added:
+		case fileAdded:
 			result.add(Entry{
 				hash:       r.Hash,
 				path:       r.Path,
 				changeId:   r.ChangeId,
 				recordDate: r.Time,
 			})
-		case model.Deleted:
+		case fileDeleted:
 			result.deleteEntryByChangeId(r.Path, r.ChangeId)
 		default:
 			return nil, errors.New("unsupported record")

@@ -15,8 +15,15 @@ func (c Cmd) Run() error {
 	if err != nil {
 		return fmt.Errorf("failed to calculate changes: %w", err)
 	}
-	for _, change := range changes {
-		err := idx.CommitChange("", change) // TODO: do not cover err
+	for _, change := range changes.Deletions {
+		err := idx.CommitDelete(change.ChangeId(), change)
+		if err != nil {
+			return fmt.Errorf("failed to commit change {%v}: %w", change, err)
+		}
+	}
+
+	for _, change := range changes.Additions {
+		err := idx.CommitAdd("", change)
 		if err != nil {
 			return fmt.Errorf("failed to commit change {%v}: %w", change, err)
 		}

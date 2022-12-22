@@ -8,9 +8,14 @@ import (
 type committer interface {
 	add(entry Entry) error
 	remove(entry Entry) error
+	clear() error
 }
 
 type voidCommitter struct{}
+
+func (v voidCommitter) clear() error {
+	return nil
+}
 
 func (v voidCommitter) add(_ Entry) error {
 	return nil
@@ -50,24 +55,19 @@ func LoadIndexFile(filePath string) (Index, error) {
 	}, nil
 }
 
-func (i Index) CalculateChanges(files []model.HashedFile) []model.Change {
-	var changes []model.Change
+func (i Index) CalculateChanges(files []model.FileWithContent) model.Changes {
+	changes := model.Changes{}
 	existing := model.HashedFiles{}
 
 	for _, file := range files {
-		existing.Add(file)
-		if change, isChanged := i.CalculateChange(file); isChanged {
-			changes = append(changes, change)
-		}
+		existing.Replace(file)
+		changes.Append(i.CalculateChange(file))
 	}
 
 	for _, pathEntries := range i.entries {
 		for _, pathEntry := range pathEntries {
 			if !existing.HasFile(pathEntry.path, pathEntry.hash) {
-				changes = append(changes, model.Change{
-					ChangeType: model.Deleted,
-					HashedFile: pathEntry,
-				})
+				changes.Deletions = append(changes.Deletions, model.FileDeleted{IdentifiableHashedFile: pathEntry})
 			}
 		}
 	}
@@ -75,22 +75,21 @@ func (i Index) CalculateChanges(files []model.HashedFile) []model.Change {
 	return changes
 }
 
-func (i Index) CalculateChange(file model.HashedFile) (model.Change, bool) {
+func (i Index) CalculateChange(file model.FileWithContent) model.Changes {
 	if !i.entries.hasEntryWithHash(file.Path(), file.Hash()) {
-		return model.Change{
-			HashedFile: file,
-			ChangeType: model.Added,
-		}, true
+		return model.Changes{
+			Additions: []model.FileAdded{{file}},
+		}
 	}
 
-	return model.Change{}, false
+	return model.Changes{}
 }
 
-func (i Index) commitAdd(changeId string, change model.Change) error {
-	if i.entries.hasEntryWithChangeId(change.Path(), changeId) && changeId != "" {
-		return errors.New("change already exist")
+func (i Index) CommitAdd(changeId string, file model.HashedFile) error {
+	if i.entries.hasEntryWithChangeId(file.Path(), changeId) && changeId != "" {
+		return errors.New("file already exist")
 	}
-	entry := NewEntry(change.Path(), change.Hash(), changeId)
+	entry := NewEntry(file.Path(), file.Hash(), changeId)
 	if err := i.add(entry); err != nil {
 		return err
 	}
@@ -99,26 +98,23 @@ func (i Index) commitAdd(changeId string, change model.Change) error {
 	return nil
 }
 
-func (i Index) commitDelete(changeId string, change model.Change) error {
-	if !i.entries.hasEntryWithChangeId(change.Path(), changeId) {
+func (i Index) CommitDelete(changeId string, file model.HashedFile) error {
+	if !i.entries.hasEntryWithChangeId(file.Path(), changeId) {
 		return errors.New("change doesn't exist")
 	}
-	entry := NewEntry(change.Path(), change.Hash(), changeId)
+	entry := NewEntry(file.Path(), file.Hash(), changeId)
 	if err := i.remove(entry); err != nil {
 		return err
 	}
-	i.entries.deleteEntryByChangeId(change.Path(), changeId)
+	i.entries.deleteEntryByChangeId(file.Path(), changeId)
 
 	return nil
 }
 
-func (i Index) CommitChange(changeId string, change model.Change) error {
-	switch change.ChangeType {
-	case model.Added:
-		return i.commitAdd(changeId, change)
-	case model.Deleted:
-		return i.commitDelete(changeId, change)
-	default:
-		return errors.New("unsupported change")
+func (i Index) Clear() error {
+	for k := range i.entries {
+		delete(i.entries, k)
 	}
+
+	return i.committer.clear()
 }

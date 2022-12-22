@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/alecthomas/kong"
 	"github.com/mrdunski/accumulation-zone/cmd/commit"
+	"github.com/mrdunski/accumulation-zone/cmd/index"
 	"github.com/mrdunski/accumulation-zone/cmd/inventory"
 	"github.com/mrdunski/accumulation-zone/cmd/ls"
 	"github.com/mrdunski/accumulation-zone/cmd/upload"
@@ -19,6 +20,10 @@ type CommandInput struct {
 		Retrieve inventory.RetrieveCmd `cmd:"" help:"Starts retrieval job for inventory."`
 		Print    inventory.PrintCmd    `cmd:"" help:"Awaits latest job completion and prints inventory."`
 	} `cmd:"" help:"Admin operations on glacier inventory." group:"Manage Glacier Inventory"`
+
+	Recover struct {
+		Index index.RecoverCmd `cmd:"" help:"Recovers index file from glacier"`
+	} `cmd:"" help:"Various backup recovery options." group:"Recover"`
 }
 
 func main() {

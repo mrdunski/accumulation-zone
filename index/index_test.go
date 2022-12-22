@@ -1,34 +1,50 @@
 package index_test
 
 import (
+	"errors"
 	"github.com/mrdunski/accumulation-zone/index"
 	"github.com/mrdunski/accumulation-zone/model"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
+	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
-type changeMatcher struct {
-	model.Change
+type matchingFile struct {
+	file model.IdentifiableHashedFile
 }
 
-func (c changeMatcher) Match(actual interface{}) (success bool, err error) {
-	change, ok := actual.(model.Change)
-	return ok && c.ChangeType == change.ChangeType && c.Hash() == change.Hash() && c.Path() == change.Path(), nil
+func (m matchingFile) Match(actual interface{}) (success bool, err error) {
+	actualFile, isFile := actual.(model.IdentifiableHashedFile)
+	if !isFile {
+		return false, errors.New("expected file")
+	}
+
+	return m.file.Path() == actualFile.Path() &&
+		m.file.Hash() == actualFile.Hash() &&
+		m.file.ChangeId() == actualFile.ChangeId(), nil
 }
 
-func (c changeMatcher) FailureMessage(_ interface{}) string {
+func (m matchingFile) FailureMessage(_ interface{}) (message string) {
 	return ""
 }
 
-func (c changeMatcher) NegatedFailureMessage(_ interface{}) string {
+func (m matchingFile) NegatedFailureMessage(_ interface{}) (message string) {
 	return ""
 }
 
-func matchingChange(change model.Change) types.GomegaMatcher {
-	return changeMatcher{Change: change}
+type entryWithContent struct {
+	index.Entry
+}
+
+func (e entryWithContent) Content() (io.ReadCloser, error) {
+	return io.NopCloser(strings.NewReader("")), nil
+}
+
+func newEntry(path, hash, changeId string) entryWithContent {
+	return entryWithContent{Entry: index.NewEntry(path, hash, changeId)}
 }
 
 func TestIndex(t *testing.T) {
@@ -49,81 +65,82 @@ var _ = Describe("Index", func() {
 				}
 			})
 			When("index and files are the same", func() {
-				var files []model.HashedFile
+				var files []model.FileWithContent
 
 				BeforeEach(func() {
-					files = make([]model.HashedFile, 0, len(entries))
+					files = make([]model.FileWithContent, 0, len(entries))
 					for _, entry := range entries {
-						files = append(files, entry)
+						files = append(files, entryWithContent{Entry: entry})
 					}
 				})
 
 				It("finds no changes", func() {
 					i := index.New(entries)
 					changes := i.CalculateChanges(files)
-					Expect(changes).To(BeEmpty())
+					Expect(changes.Additions).To(BeEmpty())
+					Expect(changes.Deletions).To(BeEmpty())
 				})
 			})
 
 			When("there are no files", func() {
-				var files []model.HashedFile
+				var files []model.FileWithContent
 
 				BeforeEach(func() {
-					files = make([]model.HashedFile, 0)
+					files = make([]model.FileWithContent, 0)
 				})
 
 				It("All entries marked as deleted", func() {
 					i := index.New(entries)
 					changes := i.CalculateChanges(files)
-					Expect(changes).To(HaveLen(len(entries)))
-					Expect(changes).To(ContainElements(
-						model.Change{ChangeType: model.Deleted, HashedFile: entries[0]},
-						model.Change{ChangeType: model.Deleted, HashedFile: entries[1]},
-						model.Change{ChangeType: model.Deleted, HashedFile: entries[2]},
+					Expect(changes.Deletions).To(ConsistOf(
+						model.FileDeleted{IdentifiableHashedFile: entries[0]},
+						model.FileDeleted{IdentifiableHashedFile: entries[1]},
+						model.FileDeleted{IdentifiableHashedFile: entries[2]},
 					))
 				})
 			})
 
 			When("file has been modified", func() {
-				var files []model.HashedFile
+				var files []model.FileWithContent
 
 				BeforeEach(func() {
-					files = []model.HashedFile{
-						index.NewEntry("test1", "h1-new", ""),
-						index.NewEntry("test2", "h2", ""),
-						index.NewEntry("test3", "h3", ""),
+					files = []model.FileWithContent{
+						newEntry("test1", "h1-new", ""),
+						newEntry("test2", "h2", ""),
+						newEntry("test3", "h3", ""),
 					}
 				})
 
 				It("finds deleted entry from index and added file", func() {
 					i := index.New(entries)
 					changes := i.CalculateChanges(files)
-					Expect(changes).To(HaveLen(2))
-					Expect(changes).To(ContainElements(
-						model.Change{ChangeType: model.Deleted, HashedFile: entries[0]},
-						model.Change{ChangeType: model.Added, HashedFile: files[0]},
+					Expect(changes.Deletions).Should(ConsistOf(
+						model.FileDeleted{IdentifiableHashedFile: entries[0]},
+					))
+					Expect(changes.Additions).Should(ConsistOf(
+						model.FileAdded{FileWithContent: files[0]},
 					))
 				})
 			})
 
 			When("file has been added", func() {
-				var files []model.HashedFile
+				var files []model.FileWithContent
 
 				BeforeEach(func() {
-					files = []model.HashedFile{
-						index.NewEntry("test1", "h1", ""),
-						index.NewEntry("test2", "h2", ""),
-						index.NewEntry("test3", "h3", ""),
-						index.NewEntry("test4", "h4", ""),
+					files = []model.FileWithContent{
+						newEntry("test1", "h1", ""),
+						newEntry("test2", "h2", ""),
+						newEntry("test3", "h3", ""),
+						newEntry("test4", "h4", ""),
 					}
 				})
 
 				It("finds deleted entry from index and added file", func() {
 					i := index.New(entries)
 					changes := i.CalculateChanges(files)
-					Expect(changes).To(HaveLen(1))
-					Expect(changes).To(ContainElements(
-						model.Change{ChangeType: model.Added, HashedFile: files[3]},
+					Expect(changes.Deletions).To(BeEmpty())
+					Expect(changes.Additions).Should(ConsistOf(
+						model.FileAdded{FileWithContent: files[3]},
 					))
 				})
 			})
@@ -142,104 +159,101 @@ var _ = Describe("Index", func() {
 			})
 
 			When("file has been modified", func() {
-				var files []model.HashedFile
+				var files []model.FileWithContent
 
 				BeforeEach(func() {
-					files = []model.HashedFile{
-						index.NewEntry("test1", "h1-new", ""),
-						index.NewEntry("test2", "h2", ""),
-						index.NewEntry("test3", "h3", ""),
+					files = []model.FileWithContent{
+						newEntry("test1", "h1-new", ""),
+						newEntry("test2", "h2", ""),
+						newEntry("test3", "h3", ""),
 					}
 				})
 
 				It("finds deleted entries from index and added file", func() {
 					i := index.New(entries)
 					changes := i.CalculateChanges(files)
-					Expect(changes).To(ContainElements(
-						model.Change{ChangeType: model.Deleted, HashedFile: entries[0]},
-						model.Change{ChangeType: model.Deleted, HashedFile: entries[1]},
-						model.Change{ChangeType: model.Added, HashedFile: files[0]},
+					Expect(changes.Deletions).Should(ConsistOf(
+						model.FileDeleted{IdentifiableHashedFile: entries[0]},
+						model.FileDeleted{IdentifiableHashedFile: entries[1]},
 					))
-					Expect(changes).To(HaveLen(3))
+					Expect(changes.Additions).Should(ConsistOf(
+						model.FileAdded{FileWithContent: files[0]},
+					))
 				})
 			})
 
 			When("file hash is in the index", func() {
-				var files []model.HashedFile
+				var files []model.FileWithContent
 
 				BeforeEach(func() {
-					files = []model.HashedFile{
-						index.NewEntry("test1", "h1b", ""),
-						index.NewEntry("test2", "h2", ""),
-						index.NewEntry("test3", "h3", ""),
+					files = []model.FileWithContent{
+						newEntry("test1", "h1b", ""),
+						newEntry("test2", "h2", ""),
+						newEntry("test3", "h3", ""),
 					}
 				})
 
 				It("keeps matching entry from index", func() {
 					i := index.New(entries)
 					changes := i.CalculateChanges(files)
-					Expect(changes).To(ContainElement(
-						model.Change{ChangeType: model.Deleted, HashedFile: entries[0]},
+					Expect(changes.Deletions).Should(ConsistOf(
+						model.FileDeleted{IdentifiableHashedFile: entries[0]},
 					))
-					Expect(changes).To(HaveLen(1))
+					Expect(changes.Additions).To(BeEmpty())
 				})
 			})
 		})
 	})
 
 	Describe("CommitChange", func() {
-		var i index.Index
-		var testEntry index.Entry
+		Context("with test entry in index", func() {
+			var i index.Index
+			var testEntry entryWithContent
 
-		BeforeEach(func() {
-			testEntry = index.NewEntry("test1", "h1", "123")
-			i = index.New([]index.Entry{testEntry})
-		})
+			BeforeEach(func() {
+				testEntry = newEntry("test1", "h1", "123")
+				i = index.New([]index.Entry{testEntry.Entry})
+			})
 
-		It("should commit delete", func() {
-			deletion := model.Change{ChangeType: model.Deleted, HashedFile: index.NewEntry("test1", "h1", "123")}
-			err := i.CommitChange("123", deletion)
-			Expect(err).NotTo(HaveOccurred())
+			It("should commit delete", func() {
+				deletion := index.NewEntry("test1", "h1", "123")
+				err := i.CommitDelete("123", deletion)
+				Expect(err).NotTo(HaveOccurred())
 
-			changesAfterCommit := i.CalculateChanges([]model.HashedFile{})
-			Expect(changesAfterCommit).To(BeEmpty())
-		})
+				changesAfterCommit := i.CalculateChanges([]model.FileWithContent{})
+				Expect(changesAfterCommit.Deletions).To(BeEmpty())
+				Expect(changesAfterCommit.Additions).To(BeEmpty())
+			})
 
-		It("should not commit delete with wrong change id", func() {
-			deletion := model.Change{ChangeType: model.Deleted, HashedFile: index.NewEntry("test1", "h1", "234")}
-			err := i.CommitChange("234", deletion)
-			Expect(err).To(HaveOccurred())
+			It("should not commit delete with wrong change id", func() {
+				deletion := index.NewEntry("test1", "h1", "234")
+				err := i.CommitDelete("234", deletion)
+				Expect(err).To(HaveOccurred())
 
-			changesAfterCommit := i.CalculateChanges([]model.HashedFile{})
-			Expect(changesAfterCommit).
-				To(ContainElement(matchingChange(model.Change{ChangeType: model.Deleted, HashedFile: testEntry})))
-		})
+				changesAfterCommit := i.CalculateChanges([]model.FileWithContent{})
+				Expect(changesAfterCommit.Deletions).To(ConsistOf(matchingFile{file: testEntry}))
+				Expect(changesAfterCommit.Additions).To(BeEmpty())
+			})
 
-		It("should commit add", func() {
-			entryToAdd := index.NewEntry("test2", "h2", "")
-			addition := model.Change{ChangeType: model.Added, HashedFile: entryToAdd}
-			err := i.CommitChange("234", addition)
-			Expect(err).NotTo(HaveOccurred())
+			It("should commit add", func() {
+				entryToAdd := newEntry("test2", "h2", "")
+				err := i.CommitAdd("234", entryToAdd)
+				Expect(err).NotTo(HaveOccurred())
 
-			changesAfterCommit := i.CalculateChanges([]model.HashedFile{entryToAdd, testEntry})
-			Expect(changesAfterCommit).To(BeEmpty())
-		})
+				changesAfterCommit := i.CalculateChanges([]model.FileWithContent{entryToAdd, testEntry})
+				Expect(changesAfterCommit.Additions).To(BeEmpty())
+				Expect(changesAfterCommit.Deletions).To(BeEmpty())
+			})
 
-		It("should not commit add for duplicated entry", func() {
-			entryToAdd := index.NewEntry("test1", "h2", "123")
-			addition := model.Change{ChangeType: model.Added, HashedFile: entryToAdd}
-			err := i.CommitChange("123", addition)
-			Expect(err).To(HaveOccurred())
+			It("should not commit add for duplicated entry", func() {
+				entryToAdd := newEntry("test1", "h2", "123")
+				err := i.CommitAdd("123", entryToAdd)
+				Expect(err).To(HaveOccurred())
 
-			changesAfterCommit := i.CalculateChanges([]model.HashedFile{entryToAdd, testEntry})
-			Expect(changesAfterCommit).
-				To(ContainElement(matchingChange(model.Change{ChangeType: model.Added, HashedFile: entryToAdd})))
-		})
-
-		It("fails on unsupported change", func() {
-			weirdChange := model.Change{ChangeType: "weird"}
-			err := i.CommitChange("123", weirdChange)
-			Expect(err).To(HaveOccurred())
+				changesAfterCommit := i.CalculateChanges([]model.FileWithContent{entryToAdd, testEntry})
+				Expect(changesAfterCommit.Additions).To(ConsistOf(model.FileAdded{FileWithContent: entryToAdd}))
+				Expect(changesAfterCommit.Deletions).To(BeEmpty())
+			})
 		})
 	})
 
@@ -261,30 +275,33 @@ var _ = Describe("Index", func() {
 		})
 
 		It("should add and remove file", func() {
-			addition := model.Change{ChangeType: model.Added, HashedFile: index.NewEntry("test1", "h1", "123")}
-			deletion := model.Change{ChangeType: model.Deleted, HashedFile: index.NewEntry("test1", "h1", "123")}
+			addition := newEntry("test1", "h1", "123")
+			deletion := newEntry("test1", "h1", "123")
 
-			err := i.CommitChange("123", addition)
+			err := i.CommitAdd("123", addition)
 			Expect(err).NotTo(HaveOccurred())
-			changesAfterAddition := i.CalculateChanges([]model.HashedFile{addition})
-			Expect(changesAfterAddition).To(BeEmpty())
+			changesAfterAddition := i.CalculateChanges([]model.FileWithContent{addition})
+			Expect(changesAfterAddition.Additions).To(BeEmpty())
+			Expect(changesAfterAddition.Deletions).To(BeEmpty())
 
-			err = i.CommitChange("123", deletion)
+			err = i.CommitDelete("123", deletion)
 			Expect(err).NotTo(HaveOccurred())
-			changesAfterDeletion := i.CalculateChanges([]model.HashedFile{})
-			Expect(changesAfterDeletion).To(BeEmpty())
+			changesAfterDeletion := i.CalculateChanges([]model.FileWithContent{})
+			Expect(changesAfterDeletion.Deletions).To(BeEmpty())
+			Expect(changesAfterDeletion.Additions).To(BeEmpty())
 		})
 
 		It("should reload changes", func() {
-			addition := model.Change{ChangeType: model.Added, HashedFile: index.NewEntry("test1", "h1", "123")}
+			addition := newEntry("test1", "h1", "123")
 
-			err := i.CommitChange("123", addition)
+			err := i.CommitAdd("123", addition)
 			Expect(err).NotTo(HaveOccurred())
 
 			i, err = index.LoadIndexFile(temp.Name())
 			Expect(err).NotTo(HaveOccurred())
-			changesAfterAddition := i.CalculateChanges([]model.HashedFile{addition})
-			Expect(changesAfterAddition).To(BeEmpty())
+			changesAfterAddition := i.CalculateChanges([]model.FileWithContent{addition})
+			Expect(changesAfterAddition.Additions).To(BeEmpty())
+			Expect(changesAfterAddition.Deletions).To(BeEmpty())
 		})
 	})
 })

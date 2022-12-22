@@ -1,9 +1,25 @@
-//go:generate mockgen -destination=mock_model/hash_file.go . HashedFile
+//go:generate mockgen -destination=mock_model/hash_file.go . HashedFile,FileWithContent,ChangeIdHolder,IdentifiableHashedFile
 package model
+
+import "io"
 
 type HashedFile interface {
 	Path() string
 	Hash() string
+}
+
+type FileWithContent interface {
+	HashedFile
+	Content() (io.ReadCloser, error)
+}
+
+type ChangeIdHolder interface {
+	ChangeId() string
+}
+
+type IdentifiableHashedFile interface {
+	HashedFile
+	ChangeIdHolder
 }
 
 type HashedFiles map[string]HashedFile
@@ -17,15 +33,6 @@ func (e HashedFiles) HasFile(path, hash string) bool {
 	return file.Hash() == hash
 }
 
-func (e HashedFiles) Add(file HashedFile) {
+func (e HashedFiles) Replace(file HashedFile) {
 	e[file.Path()] = file
-}
-
-func AsHashedFiles[HF HashedFile](a []HF) []HashedFile {
-	result := make([]HashedFile, 0, len(a))
-	for _, hf := range a {
-		result = append(result, hf)
-	}
-
-	return result
 }

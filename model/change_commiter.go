@@ -2,5 +2,6 @@
 package model
 
 type ChangeCommitter interface {
-	CommitChange(changeId string, change Change) error
+	CommitAdd(changeId string, changed HashedFile) error
+	CommitDelete(changeId string, changed HashedFile) error
 }
