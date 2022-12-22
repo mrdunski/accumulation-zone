@@ -114,10 +114,10 @@ var _ = Describe("Index", func() {
 				It("finds deleted entry from index and added file", func() {
 					i := index.New(entries)
 					changes := i.CalculateChanges(files)
-					Expect(changes.Deletions).Should(ConsistOf(
+					Expect(changes.Deletions).To(ConsistOf(
 						model.FileDeleted{IdentifiableHashedFile: entries[0]},
 					))
-					Expect(changes.Additions).Should(ConsistOf(
+					Expect(changes.Additions).To(ConsistOf(
 						model.FileAdded{FileWithContent: files[0]},
 					))
 				})
@@ -139,7 +139,7 @@ var _ = Describe("Index", func() {
 					i := index.New(entries)
 					changes := i.CalculateChanges(files)
 					Expect(changes.Deletions).To(BeEmpty())
-					Expect(changes.Additions).Should(ConsistOf(
+					Expect(changes.Additions).To(ConsistOf(
 						model.FileAdded{FileWithContent: files[3]},
 					))
 				})
@@ -172,11 +172,11 @@ var _ = Describe("Index", func() {
 				It("finds deleted entries from index and added file", func() {
 					i := index.New(entries)
 					changes := i.CalculateChanges(files)
-					Expect(changes.Deletions).Should(ConsistOf(
+					Expect(changes.Deletions).To(ConsistOf(
 						model.FileDeleted{IdentifiableHashedFile: entries[0]},
 						model.FileDeleted{IdentifiableHashedFile: entries[1]},
 					))
-					Expect(changes.Additions).Should(ConsistOf(
+					Expect(changes.Additions).To(ConsistOf(
 						model.FileAdded{FileWithContent: files[0]},
 					))
 				})
@@ -196,7 +196,7 @@ var _ = Describe("Index", func() {
 				It("keeps matching entry from index", func() {
 					i := index.New(entries)
 					changes := i.CalculateChanges(files)
-					Expect(changes.Deletions).Should(ConsistOf(
+					Expect(changes.Deletions).To(ConsistOf(
 						model.FileDeleted{IdentifiableHashedFile: entries[0]},
 					))
 					Expect(changes.Additions).To(BeEmpty())

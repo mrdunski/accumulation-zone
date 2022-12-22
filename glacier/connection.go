@@ -152,8 +152,8 @@ func (c *Connection) getInventoryJobOutput() ([]byte, error) {
 	}
 
 	for job.StatusCode == nil || *job.StatusCode == "InProgress" {
-		fmt.Printf(`job [%s] "%s" has status %s (%s)
-`, flatString(job.JobId), flatString(job.JobDescription), flatString(job.StatusCode), flatString(job.StatusMessage))
+		fmt.Printf(`job [%s] "%s" has status %s
+`, flatString(job.JobId), flatString(job.JobDescription), flatString(job.StatusCode))
 		job, err = c.FindNewestInventoryJob()
 		if err != nil {
 			return nil, err

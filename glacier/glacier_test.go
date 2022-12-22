@@ -1,6 +1,7 @@
 package glacier_test
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
@@ -284,6 +285,66 @@ var _ = Describe("Connection", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(files).To(BeEmpty())
 		})
+
+		It("handles job in progress", func() {
+			inProgress := awsGlacier.JobDescription{
+				JobId:                        aws.String("aJob"),
+				InventoryRetrievalParameters: &awsGlacier.InventoryRetrievalJobDescription{},
+				StatusCode:                   aws.String("InProgress"),
+			}
+			done := awsGlacier.JobDescription{
+				JobId:                        aws.String("aJob"),
+				InventoryRetrievalParameters: &awsGlacier.InventoryRetrievalJobDescription{},
+				StatusCode:                   aws.String("Succeeded"),
+			}
+
+			firstCall := true
+
+			glacierCli.EXPECT().ListJobs(gomock.Eq(&awsGlacier.ListJobsInput{
+				AccountId: aws.String(testAccountId),
+				VaultName: aws.String(testVaultName),
+			})).Times(2).DoAndReturn(func(_ *awsGlacier.ListJobsInput) (*awsGlacier.ListJobsOutput, error) {
+				if firstCall {
+					firstCall = false
+					return &awsGlacier.ListJobsOutput{JobList: []*awsGlacier.JobDescription{&inProgress}}, nil
+				}
+				return &awsGlacier.ListJobsOutput{JobList: []*awsGlacier.JobDescription{&done}}, nil
+			})
+
+			glacierCli.EXPECT().
+				GetJobOutput(gomock.Any()).
+				Return(&awsGlacier.GetJobOutputOutput{Body: io.NopCloser(strings.NewReader("{}"))}, nil)
+
+			files, err := connection.ListInventoryAllFiles()
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(files).To(BeEmpty())
+		})
+
+		It("handles invalid output", func() {
+			mockSuccessfulInventoryJob(`---
+ArchiveList:
+  - ArchiveId: test`)
+
+			files, err := connection.ListInventoryAllFiles()
+
+			syntaxErr := &json.SyntaxError{}
+			Expect(errors.As(err, &syntaxErr)).To(BeTrue())
+			Expect(files).To(BeEmpty())
+		})
+
+		DescribeTable("handles an archive", func(jobOut string, expectedPath, expectedHash, expectedId string) {
+			mockSuccessfulInventoryJob(jobOut)
+
+			files, err := connection.ListInventoryAllFiles()
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(files).To(ConsistOf(MatchingFile{Path: expectedPath, Hash: expectedHash, Id: expectedId}))
+		},
+			Entry("with id", `{"ArchiveList":[{"ArchiveId":"testId"}]}`, "", "", "testId"),
+			Entry("with path", `{"ArchiveList":[{"ArchiveDescription":"testPath"}]}`, "testPath", "", ""),
+			Entry("with hash", `{"ArchiveList":[{"SHA256TreeHash":"testHash"}]}`, "", "testHash", ""),
+		)
 	})
 
 	Context("with fixture of glacier inventory", func() {
