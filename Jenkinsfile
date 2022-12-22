@@ -1,7 +1,8 @@
 pipeline {
     environment {
         IMAGE_TAG = "${(GIT_BRANCH == 'main') ? "0.$BUILD_NUMBER.0.$GIT_COMMIT" : "$GIT_COMMIT"}"
-        IMAGE_REPO_AND_TAG = "mrdunski/accumulation-zone:$IMAGE_TAG"
+        IMAGE_REPO = "mrdunski/accumulation-zone"
+        IMAGE_REPO_AND_TAG = "$IMAGE_REPO:$IMAGE_TAG"
         CHART_VERSION = "${(GIT_BRANCH == 'main') ? "0.$BUILD_NUMBER.0+$GIT_COMMIT" : "0.0.1+$GIT_COMMIT"}"
         DOCKER_BUILDKIT = "1"
     }
@@ -28,6 +29,22 @@ pipeline {
                 }
                 sh "docker build --pull -t $IMAGE_REPO_AND_TAG ."
                 sh "docker push $IMAGE_REPO_AND_TAG"
+            }
+        }
+
+        stage('Tag Latest') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    currentBuild.description = "image: $IMAGE_REPO_AND_TAG"
+                }
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'pwd', usernameVariable: 'usr')]) {
+                    sh "docker login --username $usr --password $pwd"
+                }
+                sh "docker tag $IMAGE_REPO_AND_TAG $IMAGE_REPO"
+                sh "docker push $IMAGE_REPO"
             }
         }
 
