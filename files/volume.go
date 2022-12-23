@@ -150,5 +150,6 @@ func (l Volume) loadSubPath(subPath string) ([]model.FileWithContent, error) {
 
 // LoadTree loads all files from the Volume
 func (l Volume) LoadTree() ([]model.FileWithContent, error) {
+	logger.WithComponent("volume").Debugf("Loading tree %s, excludes: %v", l.basePath, l.excludes)
 	return l.loadSubPath("")
 }
