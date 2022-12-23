@@ -11,7 +11,7 @@ import (
 type Volume struct {
 	Path      string   `arg:"" env:"PATH_TO_BACKUP" help:"Path to synchronize." type:"path" group:"Volume"`
 	IndexFile string   `help:"File where synchronisation data will be kept." optional:"" default:".changes.log" group:"Volume"`
-	Excludes  []string `name:"exclude" env:"BACKUP_EXCLUDES" help:"Exclude some files and directories by name" optional:"" sep:"none" group:"Volume"`
+	Excludes  []string `name:"exclude" env:"BACKUP_EXCLUDES" help:"Exclude some files and directories by name" optional:"" sep:"," group:"Volume"`
 }
 
 func (c Volume) allExcludes() []string {
