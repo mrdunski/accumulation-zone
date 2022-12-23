@@ -11,7 +11,7 @@ type RetrieveCmd struct {
 }
 
 func (c RetrieveCmd) Run() error {
-	logger.Get().Info("Running retrieve job on inventory")
+	logger.Get().Info("Starting retrieve job on inventory")
 	connection, err := glacier.OpenConnection(c.VaultConfig)
 	if err != nil {
 		return fmt.Errorf("can't open connection: %w", err)
