@@ -3,6 +3,7 @@ package inventory
 import (
 	"fmt"
 	"github.com/mrdunski/accumulation-zone/glacier"
+	"github.com/mrdunski/accumulation-zone/logger"
 )
 
 type PurgeCmd struct {
@@ -11,6 +12,8 @@ type PurgeCmd struct {
 }
 
 func (c PurgeCmd) Run() error {
+	logger.Get().Info("Purging inventory in Glacier")
+
 	if c.VaultName != c.IReallyWantToDeleteAllArchivesInVault {
 		return fmt.Errorf("unsafe operation: vault name doesn't match %s != %s", c.VaultName, c.IReallyWantToDeleteAllArchivesInVault)
 	}
@@ -31,5 +34,6 @@ func (c PurgeCmd) Run() error {
 		}
 	}
 
+	logger.Get().Info("Done")
 	return nil
 }

@@ -47,7 +47,7 @@ var _ = Describe("volume.LoadTree", func() {
 	testDir := filepath.Join(dirPath, "test")
 	When("valid path provided", func() {
 		validPath := filepath.Join(testDir, "valid")
-		loader := NewLoader(validPath)
+		loader := NewVolume(validPath)
 		It("loads all files", func() {
 			tree, err := loader.LoadTree()
 			Expect(err).NotTo(HaveOccurred())
@@ -62,7 +62,7 @@ var _ = Describe("volume.LoadTree", func() {
 
 	When("file is broken", func() {
 		brokenPath := filepath.Join(testDir, "broken")
-		loader := NewLoader(brokenPath)
+		loader := NewVolume(brokenPath)
 		It("returns an error", func() {
 			_, err := loader.LoadTree()
 			Expect(err).To(HaveOccurred())
@@ -71,7 +71,7 @@ var _ = Describe("volume.LoadTree", func() {
 
 	When("dir is missing", func() {
 		missingPath := filepath.Join(testDir, "missing")
-		loader := NewLoader(missingPath)
+		loader := NewVolume(missingPath)
 		It("returns an error", func() {
 			_, err := loader.LoadTree()
 			Expect(err).To(HaveOccurred())
@@ -80,7 +80,7 @@ var _ = Describe("volume.LoadTree", func() {
 
 	When("path is file", func() {
 		filePath := filepath.Join(testDir, "valid", "empty-file")
-		loader := NewLoader(filePath)
+		loader := NewVolume(filePath)
 		It("returns an error", func() {
 			_, err := loader.LoadTree()
 			Expect(err).To(HaveOccurred())
@@ -96,7 +96,7 @@ var _ = Describe("volume.LoadFile", func() {
 			_, rtFile, _, _ := runtime.Caller(0)
 			dirPath := filepath.Dir(rtFile)
 			dir := filepath.Join(dirPath, "test", "valid", "dir")
-			loader := NewLoader(dir)
+			loader := NewVolume(dir)
 			f, err := loader.LoadFile("testfile1")
 			Expect(err).NotTo(HaveOccurred())
 			file = f
@@ -134,7 +134,7 @@ var _ = Describe("volume.save", func() {
 		file.EXPECT().Path().AnyTimes().Return("file.txt")
 		file.EXPECT().Content().Return(io.NopCloser(strings.NewReader("test-content")), nil)
 
-		loader := NewLoader(testDir)
+		loader := NewVolume(testDir)
 		err := loader.Save(file)
 
 		Expect(err).ToNot(HaveOccurred())
@@ -152,7 +152,7 @@ var _ = Describe("volume.save", func() {
 		file.EXPECT().Path().AnyTimes().Return("existing.txt")
 		file.EXPECT().Content().Return(io.NopCloser(strings.NewReader("test-content")), nil)
 
-		loader := NewLoader(testDir)
+		loader := NewVolume(testDir)
 		err := loader.Save(file)
 
 		Expect(err).ToNot(HaveOccurred())
@@ -170,7 +170,7 @@ var _ = Describe("volume.save", func() {
 		file.EXPECT().Path().AnyTimes().Return("file.txt")
 		file.EXPECT().Content().Return(nil, expectedErr)
 
-		loader := NewLoader(testDir)
+		loader := NewVolume(testDir)
 		err := loader.Save(file)
 
 		Expect(err).To(WrapError(expectedErr))

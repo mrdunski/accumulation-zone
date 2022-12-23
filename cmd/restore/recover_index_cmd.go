@@ -3,6 +3,7 @@ package restore
 import (
 	"fmt"
 	"github.com/mrdunski/accumulation-zone/glacier"
+	"github.com/mrdunski/accumulation-zone/logger"
 	"github.com/mrdunski/accumulation-zone/volume"
 )
 
@@ -18,6 +19,8 @@ type IndexCmd struct {
 }
 
 func (c IndexCmd) Run() error {
+	logger.Get().Info("Restoring index from Glacier")
+
 	connection, err := glacier.OpenConnection(c.VaultConfig)
 	if err != nil {
 		return fmt.Errorf("can't open connection: %w", err)
@@ -46,5 +49,6 @@ func (c IndexCmd) Run() error {
 		return fmt.Errorf("failed to list files in inventory: %w", err)
 	}
 
+	logger.Get().Info("Done")
 	return nil
 }

@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"github.com/mrdunski/accumulation-zone/logger"
+	"github.com/sirupsen/logrus"
 	"os"
 	"time"
 )
@@ -94,8 +96,13 @@ func (f fileRecords) loadEntries() (_ entries, err error) {
 
 	result := entries{}
 	scanner := bufio.NewScanner(file)
+	r := record{}
+	scanned := 0
 	for scanner.Scan() {
-		r := record{}
+		scanned++
+		if logger.Get().IsLevelEnabled(logrus.TraceLevel) {
+			logger.WithComponent("index").Tracef("Processing entry: %s", scanner.Text())
+		}
 		if err = json.Unmarshal(scanner.Bytes(), &r); err != nil {
 			return nil, err
 		}
@@ -120,6 +127,9 @@ func (f fileRecords) loadEntries() (_ entries, err error) {
 		return nil, scanner.Err()
 	}
 
+	if logger.Get().IsLevelEnabled(logrus.DebugLevel) {
+		logger.WithComponent("index").Debugf("Scanned %d entries, loaded %d index items", scanned, len(result.flatten()))
+	}
 	return result, nil
 }
 
