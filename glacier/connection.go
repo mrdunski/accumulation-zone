@@ -8,7 +8,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/glacier"
 	"github.com/mrdunski/accumulation-zone/index"
+	"github.com/mrdunski/accumulation-zone/logger"
 	"github.com/mrdunski/accumulation-zone/model"
+	"github.com/sirupsen/logrus"
 	"io"
 	"time"
 )
@@ -37,9 +39,17 @@ func NewConnection(cli Cli, vaultName, accountId string) Connection {
 }
 
 func OpenConnection(cfg VaultConfig) (*Connection, error) {
+	var logWrapper aws.LoggerFunc = func(i ...interface{}) {
+		logger.WithComponent("glacier").WithField("lib", "aws").Trace(i...)
+	}
+
+	logLevel := aws.LogDebug
+
 	ses, err := session.NewSession(&aws.Config{
 		Credentials: cfg.credentials(),
 		Region:      &cfg.RegionId,
+		Logger:      logWrapper,
+		LogLevel:    &logLevel,
 	})
 
 	if err != nil {
@@ -51,6 +61,10 @@ func OpenConnection(cfg VaultConfig) (*Connection, error) {
 		vaultName: cfg.VaultName,
 		accountId: cfg.AccountId,
 	}, nil
+}
+
+func (c *Connection) logger() *logrus.Entry {
+	return logger.WithComponent("glacier")
 }
 
 func (c *Connection) Process(committer model.ChangeCommitter, changes model.Changes) error {
@@ -106,6 +120,7 @@ func (c *Connection) Delete(id string) error {
 		VaultName: &c.vaultName,
 	}
 
+	c.logger().Debugf("Deleting archive: %s", id)
 	_, err := c.glacier.DeleteArchive(input)
 	if err != nil {
 		return err
@@ -133,6 +148,7 @@ func (c *Connection) Upload(file model.FileWithContent) (string, error) {
 		VaultName:          &c.vaultName,
 	}
 
+	c.logger().Debugf("Uploading archive: %s %s", file.Path(), file.Hash())
 	arch, err := c.glacier.UploadArchive(input)
 	if err != nil {
 		return "", err
@@ -146,11 +162,17 @@ func (c *Connection) awaitJobCompletion(inputJob *glacier.JobDescription) (*glac
 		return nil, errors.New("there are no running or completed inventory jobs to print")
 	}
 
+	c.logger().Debugf("Checking job [%s %s] status", flatString(inputJob.JobId), flatString(inputJob.JobDescription))
+
+	if flatString(inputJob.StatusCode) == "InProgress" {
+		c.logger().Infof("Job [%s] \"%s\" has status %s - waiting for completion. You can safely stop this and go back to this later.\n", flatString(inputJob.JobId), flatString(inputJob.JobDescription), flatString(inputJob.StatusCode))
+	}
+
 	job := inputJob
 	var err error
 
 	for job.StatusCode == nil || *job.StatusCode == "InProgress" {
-		fmt.Printf(`job [%s] "%s" has status %s
+		c.logger().Debugf(`job [%s] "%s" has status %s
 `, flatString(job.JobId), flatString(job.JobDescription), flatString(job.StatusCode))
 		job, err = c.describeJob(job.JobId)
 		if err != nil {
@@ -162,6 +184,8 @@ func (c *Connection) awaitJobCompletion(inputJob *glacier.JobDescription) (*glac
 	if *job.StatusCode == "Failed" {
 		return nil, fmt.Errorf("job failed: %s", flatString(job.StatusMessage))
 	}
+
+	c.logger().Debugf("Job [%s %s] has finished", flatString(inputJob.JobId), flatString(inputJob.JobDescription))
 
 	return job, nil
 }
@@ -180,13 +204,12 @@ func (c *Connection) getInventoryJobOutput() ([]byte, error) {
 	return c.GetJobOutput(*job.JobId)
 }
 
-func (c *Connection) PrintInventory() error {
+func (c *Connection) InventoryContent() (string, error) {
 	output, err := c.getInventoryJobOutput()
 	if err != nil {
-		return err
+		return "", err
 	}
-	fmt.Printf("%s", string(output))
-	return nil
+	return string(output), nil
 }
 
 func (c *Connection) FindNewestInventoryJob() (*glacier.JobDescription, error) {
@@ -232,6 +255,7 @@ func (c *Connection) describeJob(jobId *string) (*glacier.JobDescription, error)
 		JobId:     jobId,
 	}
 
+	c.logger().Debugf("Loading job: %s", flatString(jobId))
 	job, err := c.glacier.DescribeJob(&describe)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get decription for job: %w", err)
@@ -247,6 +271,7 @@ func (c *Connection) createJob(parameters glacier.JobParameters) (*glacier.JobDe
 		JobParameters: &parameters,
 	}
 
+	c.logger().Debugf("Creating job: %v", parameters)
 	output, err := c.glacier.InitiateJob(&input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create job: %w", err)
@@ -270,6 +295,7 @@ func (c *Connection) GetJobAwsOutput(jobId string) (*glacier.GetJobOutputOutput,
 		JobId:     &jobId,
 	}
 
+	c.logger().Debugf("Loading output of job: %s", jobId)
 	output, err := c.glacier.GetJobOutput(&input)
 	if err != nil {
 		return nil, err
@@ -321,8 +347,10 @@ func (c *Connection) listAllJobs() ([]*glacier.JobDescription, error) {
 	var err error
 	var jobs *glacier.ListJobsOutput
 
+	c.logger().Debug("Loading list of all jobs in vault")
 	for jobs == nil || jobs.Marker != nil {
 		if jobs != nil {
+			c.logger().Debug("Loading next page of jobs")
 			input.Marker = jobs.Marker
 		}
 		jobs, err = c.glacier.ListJobs(&input)

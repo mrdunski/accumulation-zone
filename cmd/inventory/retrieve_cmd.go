@@ -3,6 +3,7 @@ package inventory
 import (
 	"fmt"
 	"github.com/mrdunski/accumulation-zone/glacier"
+	"github.com/mrdunski/accumulation-zone/logger"
 )
 
 type RetrieveCmd struct {
@@ -10,6 +11,7 @@ type RetrieveCmd struct {
 }
 
 func (c RetrieveCmd) Run() error {
+	logger.Get().Info("Starting retrieve job on inventory")
 	connection, err := glacier.OpenConnection(c.VaultConfig)
 	if err != nil {
 		return fmt.Errorf("can't open connection: %w", err)
@@ -20,5 +22,6 @@ func (c RetrieveCmd) Run() error {
 		return fmt.Errorf("failed to create inventory job: %w", err)
 	}
 
+	logger.Get().Info("Done")
 	return nil
 }

@@ -244,13 +244,14 @@ var _ = Describe("Connection", func() {
 		})
 	})
 
-	Describe("PrintInventory", func() {
+	Describe("InventoryContent", func() {
 		It("prints inventory when job has finished", func() {
 			mockSuccessfulInventoryJob("{}")
 
-			err := connection.PrintInventory()
+			out, err := connection.InventoryContent()
 
 			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(Equal("{}"))
 		})
 
 		It("handles failed job", func() {
@@ -261,10 +262,11 @@ var _ = Describe("Connection", func() {
 				StatusMessage:                aws.String("bad weather"),
 			})
 
-			err := connection.PrintInventory()
+			out, err := connection.InventoryContent()
 
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError("job failed: bad weather"))
+			Expect(out).To(BeEmpty())
 		})
 	})
 
@@ -410,7 +412,7 @@ ArchiveList:
 				err = connection.AddInventoryToIndex(idx)
 				Expect(err).NotTo(HaveOccurred())
 
-				tree, err := files.NewLoader(testDir).LoadTree()
+				tree, err := files.NewVolume(testDir).LoadTree()
 				Expect(err).ToNot(HaveOccurred())
 
 				changes := idx.CalculateChanges(tree)
@@ -423,7 +425,7 @@ ArchiveList:
 				err = connection.AddInventoryToIndex(idx)
 				Expect(err).NotTo(HaveOccurred())
 
-				tree, err := files.NewLoader(testDir).LoadTree()
+				tree, err := files.NewVolume(testDir).LoadTree()
 				Expect(err).ToNot(HaveOccurred())
 
 				idx, err = index.LoadIndexFile(idxFile.Name())

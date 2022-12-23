@@ -1,8 +1,8 @@
 package restore
 
 import (
-	"fmt"
 	"github.com/mrdunski/accumulation-zone/glacier"
+	"github.com/mrdunski/accumulation-zone/logger"
 	"github.com/mrdunski/accumulation-zone/model"
 	"github.com/mrdunski/accumulation-zone/volume"
 )
@@ -14,6 +14,8 @@ type DataCmd struct {
 }
 
 func (c DataCmd) Run() error {
+	logger.Get().Info("Restoring data from Glacier")
+
 	connection, err := glacier.OpenConnection(c.VaultConfig)
 	if err != nil {
 		return err
@@ -32,7 +34,15 @@ func (c DataCmd) Run() error {
 			return err
 		}
 
-		fmt.Printf("* recover job for file %s, status: %s\n", file.Path(), *job.StatusCode)
+		switch *job.StatusCode {
+		case "Succeeded":
+			logger.Get().Debugf("* recover job for file %s, status: %s\n", file.Path(), *job.StatusCode)
+		case "Failed":
+			logger.Get().Errorf("* recover job for file %s, status: %s\n", file.Path(), *job.StatusCode)
+		default:
+			logger.Get().Warnf("* recover job for file %s, status: %s\n", file.Path(), *job.StatusCode)
+
+		}
 	}
 
 	for _, file := range filesToRecover {
@@ -47,5 +57,6 @@ func (c DataCmd) Run() error {
 		}
 	}
 
+	logger.Get().Info("Done")
 	return nil
 }

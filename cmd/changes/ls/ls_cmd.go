@@ -2,6 +2,7 @@ package ls
 
 import (
 	"fmt"
+	"github.com/mrdunski/accumulation-zone/logger"
 	"github.com/mrdunski/accumulation-zone/volume"
 )
 
@@ -10,11 +11,12 @@ type Cmd struct {
 }
 
 func (c Cmd) Run() error {
+	logger.Get().Info("Listing local changes")
 	changes, _, err := c.GetChanges()
 	if err != nil {
-		return fmt.Errorf("failed to calculate changes: %w", err)
+		return err
 	}
-	println("Detected changes:")
+	fmt.Println("Detected changes:")
 	for _, change := range changes.Additions {
 		fmt.Printf("+ %v\n", change)
 	}
@@ -22,5 +24,6 @@ func (c Cmd) Run() error {
 		fmt.Printf("- %v\n", change)
 	}
 
+	logger.Get().Info("Done")
 	return nil
 }

@@ -35,3 +35,11 @@ func (c *Changes) Append(changes Changes) {
 	c.Additions = append(c.Additions, changes.Additions...)
 	c.Deletions = append(c.Deletions, changes.Deletions...)
 }
+
+func (c *Changes) String() string {
+	return fmt.Sprintf("{added: %v, deleted: %v}", c.Additions, c.Deletions)
+}
+
+func (c *Changes) Len() int {
+	return len(c.Additions) + len(c.Deletions)
+}

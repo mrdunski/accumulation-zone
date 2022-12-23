@@ -37,4 +37,24 @@ var _ = DescribeTable("Format message", func(stringer fmt.Stringer, expectedResu
 	Entry("FileAdded with nil", FileAdded{}, "{added: ?}"),
 	Entry("FileDeleted", FileDeleted{IdentifiableHashedFile: file{path: "abc", hash: "h"}}, "{deleted: {abc h | abc,h}}"),
 	Entry("FileDeleted with nil", FileDeleted{}, "{deleted: ?}"),
+	Entry("Changes", &Changes{}, "{added: [], deleted: []}"),
+	Entry("Changes", &Changes{Additions: []FileAdded{{}}, Deletions: []FileDeleted{{}}}, "{added: [{added: ?}], deleted: [{deleted: ?}]}"),
 )
+
+var _ = Describe("Changes", func() {
+	It("appends other changes", func() {
+		changes1 := Changes{
+			Additions: []FileAdded{{FileWithContent: file{path: "1"}}},
+			Deletions: []FileDeleted{{IdentifiableHashedFile: file{path: "2"}}},
+		}
+		changes2 := Changes{
+			Additions: []FileAdded{{FileWithContent: file{path: "3"}}},
+			Deletions: []FileDeleted{{IdentifiableHashedFile: file{path: "4"}}, {IdentifiableHashedFile: file{path: "5"}}},
+		}
+
+		changes1.Append(changes2)
+
+		Expect(changes1.Additions).To(ConsistOf(FileAdded{FileWithContent: file{path: "1"}}, FileAdded{FileWithContent: file{path: "3"}}))
+		Expect(changes1.Deletions).To(ConsistOf(FileDeleted{IdentifiableHashedFile: file{path: "2"}}, FileDeleted{IdentifiableHashedFile: file{path: "4"}}, FileDeleted{IdentifiableHashedFile: file{path: "5"}}))
+	})
+})

@@ -7,6 +7,23 @@ import (
 	"path"
 )
 
+type stdOS struct{}
+
+func (f stdOS) ReadDir(name string) ([]os.DirEntry, error) {
+	return os.ReadDir(name)
+}
+
+func (f stdOS) Open(name string) (io.ReadCloser, error) {
+	return os.Open(name)
+}
+
+var stdOSInstance = stdOS{}
+
+type FileAccess interface {
+	ReadDir(name string) ([]os.DirEntry, error)
+	Open(name string) (io.ReadCloser, error)
+}
+
 type TreeHashedFile struct {
 	os       FileAccess
 	basePath string

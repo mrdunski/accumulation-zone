@@ -25,7 +25,7 @@ func (c Volume) allExcludes() []string {
 }
 
 func (c Volume) GetChanges() (model.Changes, index.Index, error) {
-	tree, err := files.NewLoader(c.Path, c.allExcludes()...).LoadTree()
+	tree, err := files.NewVolume(c.Path, c.allExcludes()...).LoadTree()
 	if err != nil {
 		return model.Changes{}, index.Index{}, fmt.Errorf("failed to load tree {%s}: %w", c.Path, err)
 	}
@@ -48,5 +48,5 @@ func (c Volume) CreateIndex() (index.Index, error) {
 }
 
 func (c Volume) SaveFile(file model.FileWithContent) error {
-	return files.NewLoader(c.Path, c.allExcludes()...).Save(file)
+	return files.NewVolume(c.Path, c.allExcludes()...).Save(file)
 }

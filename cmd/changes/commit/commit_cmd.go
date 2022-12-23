@@ -2,6 +2,7 @@ package commit
 
 import (
 	"fmt"
+	"github.com/mrdunski/accumulation-zone/logger"
 	"github.com/mrdunski/accumulation-zone/volume"
 )
 
@@ -11,9 +12,10 @@ type Cmd struct {
 }
 
 func (c Cmd) Run() error {
+	logger.Get().Info("Commits all local changes to index")
 	changes, idx, err := c.GetChanges()
 	if err != nil {
-		return fmt.Errorf("failed to calculate changes: %w", err)
+		return err
 	}
 	for _, change := range changes.Deletions {
 		err := idx.CommitDelete(change.ChangeId(), change)
@@ -29,5 +31,6 @@ func (c Cmd) Run() error {
 		}
 	}
 
+	logger.Get().Info("Done")
 	return nil
 }

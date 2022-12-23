@@ -7,13 +7,16 @@ import (
 	"github.com/mrdunski/accumulation-zone/cmd/changes/upload"
 	"github.com/mrdunski/accumulation-zone/cmd/inventory"
 	"github.com/mrdunski/accumulation-zone/cmd/restore"
+	"github.com/mrdunski/accumulation-zone/logger"
 )
 
 type CommandInput struct {
+	logger.LogConfig
+
 	Recover struct {
-		Index restore.IndexCmd `cmd:"" help:"Recovers index file from glacier"`
-		Data  restore.DataCmd  `cmd:"" help:"Recovers data from glacier"`
-		All   restore.AllCmd   `cmd:"" help:"Recovers index and data from glacier"`
+		Index restore.IndexCmd `cmd:"" help:"Recovers index file from glacier."`
+		Data  restore.DataCmd  `cmd:"" help:"Recovers data from glacier."`
+		All   restore.AllCmd   `cmd:"" help:"Recovers index and data from glacier."`
 	} `cmd:"" help:"Various backup recovery options." group:"Recover"`
 
 	Changes struct {
@@ -32,7 +35,10 @@ type CommandInput struct {
 func main() {
 	var input = CommandInput{}
 	kongCtx := kong.Parse(&input)
+	input.LogConfig.InitLogger(kongCtx)
 
 	err := kongCtx.Run()
-	kongCtx.FatalIfErrorf(err)
+	if err != nil {
+		logger.Get().WithError(err).Fatalf("Command failed")
+	}
 }

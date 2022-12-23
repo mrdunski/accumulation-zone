@@ -3,6 +3,7 @@ package files
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/glacier"
+	"github.com/mrdunski/accumulation-zone/logger"
 	"github.com/mrdunski/accumulation-zone/model"
 	"io"
 	"os"
@@ -10,30 +11,15 @@ import (
 	"strings"
 )
 
-type stdOS struct{}
-
-func (f stdOS) ReadDir(name string) ([]os.DirEntry, error) {
-	return os.ReadDir(name)
-}
-
-func (f stdOS) Open(name string) (io.ReadCloser, error) {
-	return os.Open(name)
-}
-
-var stdOSInstance = stdOS{}
-
-type FileAccess interface {
-	ReadDir(name string) ([]os.DirEntry, error)
-	Open(name string) (io.ReadCloser, error)
-}
-
+// Volume is a backup source
 type Volume struct {
 	os       FileAccess
 	basePath string
 	excludes []string
 }
 
-func NewLoader(basePath string, excludes ...string) Volume {
+// NewVolume creates a volume for specified path. excludes define paths that should not be synchronized.
+func NewVolume(basePath string, excludes ...string) Volume {
 	return Volume{os: stdOSInstance, basePath: basePath, excludes: excludes}
 }
 
@@ -47,7 +33,9 @@ func (l Volume) isExcluded(path string) bool {
 	return false
 }
 
+// LoadFile loads specified file
 func (l Volume) LoadFile(subPath string) (_ TreeHashedFile, err error) {
+	logger.WithComponent("volume").Debugf("Loading %s/%s", l.basePath, subPath)
 	file, err := os.Open(path.Join(l.basePath, subPath))
 	if err != nil {
 		return
@@ -61,6 +49,7 @@ func (l Volume) LoadFile(subPath string) (_ TreeHashedFile, err error) {
 	hash := glacier.ComputeHashes(file)
 
 	if len(hash.TreeHash) == 0 {
+		logger.WithComponent("volume").Warnf("Empty file %s/%s - hash will be empty as well", l.basePath, subPath)
 		hash = glacier.ComputeHashes(strings.NewReader(""))
 	}
 
@@ -77,7 +66,9 @@ func (l Volume) createDirIfNotExist(content model.FileWithContent) error {
 	return os.MkdirAll(dirPath, 0700)
 }
 
+// Save stores a file in volume
 func (l Volume) Save(content model.FileWithContent) (err error) {
+	logger.WithComponent("volume").Debugf("Saving file: %s/%s", l.basePath, content.Path())
 	reader, err := content.Content()
 	if err != nil {
 		return
@@ -134,6 +125,7 @@ func (l Volume) loadEntry(entrySubPath string, entry os.DirEntry) ([]model.FileW
 }
 
 func (l Volume) loadSubPath(subPath string) ([]model.FileWithContent, error) {
+	logger.WithComponent("volume").Debugf("Loading %s/%s", l.basePath, subPath)
 	absolutePath := path.Join(l.basePath, subPath)
 	entries, err := os.ReadDir(absolutePath)
 	if err != nil {
@@ -156,6 +148,7 @@ func (l Volume) loadSubPath(subPath string) ([]model.FileWithContent, error) {
 	return result, nil
 }
 
+// LoadTree loads all files from the Volume
 func (l Volume) LoadTree() ([]model.FileWithContent, error) {
 	return l.loadSubPath("")
 }
