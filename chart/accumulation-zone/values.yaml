@@ -60,6 +60,8 @@ logger:
   level: "info"
   format: "text"
 
+excludes: ""
+
 aws:
   accountId: ""
   vaultName: ""
