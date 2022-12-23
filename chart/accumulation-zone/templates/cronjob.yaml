@@ -1,0 +1,67 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "accumulation-zone.fullname" . }}
+  labels:
+    {{- include "accumulation-zone.labels" . | nindent 4 }}
+spec:
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          {{- with .Values.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          labels:
+            {{- include "accumulation-zone.podLabels" . | nindent 12 }}
+        spec:
+          containers:
+            - name: {{ .Chart.Name }}
+              securityContext:
+                {{- toYaml .Values.securityContext | nindent 16 }}
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              {{- if eq (default .Chart.AppVersion .Values.image.tag) "latest" }}
+              imagePullPolicy: {{ .Values.image.pullPolicy | default "Always" }}
+              {{- else }}
+              imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+              {{- end }}
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+              envFrom:
+                - secretRef:
+                    name: {{ include "accumulation-zone.awsSecretName" . }}
+                    optional: false
+                - configMapRef:
+                    name: {{ include "accumulation-zone.fullname" . }}
+                    optional: false
+              {{- if .Values.volumeToBackup }}
+              volumeMounts:
+                - mountPath: "/data"
+                  name: "data"
+              {{- end }}
+              command:
+                - changes
+                - upload
+          {{- if .Values.volumeToBackup }}
+          volumes:
+            - {{ toYaml (merge (dict "name" "data") .Values.volumeToBackup) | indent 14 | trim }}
+          {{- end }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          restartPolicy: OnFailure
+  schedule: {{ .Values.cronjob.schedule }}
+  concurrencyPolicy: Forbid
+  {{ if .Values.cronjob.timeZone }}
+  timeZone: {{ .Values.cronjob.timeZone }}
+  {{ end }}

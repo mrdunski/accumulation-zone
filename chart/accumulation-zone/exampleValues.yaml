@@ -1,0 +1,13 @@
+aws:
+  accountId: "000000000001"
+  regionId: "eu-central-1"
+  vaultName: "test-vault"
+  key:
+    create: true
+    id: "AAAA1AAAAAAAAAAA4AAA"
+    secret: "0000000000000+000000000000000000000/h93k"
+
+volumeToBackup:
+  persistentVolumeClaim:
+    claimName: "test-claim"
+    readOnly: false

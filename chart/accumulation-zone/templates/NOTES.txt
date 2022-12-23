@@ -1,0 +1,4 @@
+Accumulation zone has been created, and it will use specified crontab: {{ .Values.cronjob.schedule }}
+
+To check details use:
+   kubectl --namespace {{ .Release.Namespace }} describe cronjob {{ include "accumulation-zone.fullname" . }}

@@ -56,6 +56,14 @@ for more info use:
 docker run -it mrdunski/accumulation-zone --help
 ```
 
+### Backup with Helm and Kubernetes
+
+Prepare values.yaml file. Example can be found here: [exampleValues.yaml](chart/accumulation-zone/exampleValues.yaml)
+
+```shell
+helm install -f ./chart/accumulation-zone/exampleValues.yaml my-release ./chart/accumulation-zone
+```
+
 ### Backup and restore with command line
 
 ```shell

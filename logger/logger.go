@@ -10,8 +10,8 @@ const (
 )
 
 type LogConfig struct {
-	LogLevel  string `help:"Level of logging." default:"info" enum:"trace,debug,info,warn,error"`
-	LogFormat string `help:"Format for logs." default:"text" enum:"text,json"`
+	LogLevel  string `env:"LOG_LEVEL" help:"Level of logging." default:"info" enum:"trace,debug,info,warn,error"`
+	LogFormat string `env:"LOG_FORMAT" help:"Format for logs." default:"text" enum:"text,json"`
 }
 
 func (c LogConfig) InitLogger(kongCtx *kong.Context) {

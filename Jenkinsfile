@@ -5,6 +5,7 @@ pipeline {
         IMAGE_REPO_AND_TAG = "$IMAGE_REPO:$IMAGE_TAG"
         CHART_VERSION = "${(GIT_BRANCH == 'main') ? "0.$BUILD_NUMBER.0+$GIT_COMMIT" : "0.0.1+$GIT_COMMIT"}"
         DOCKER_BUILDKIT = "1"
+        CHART_REPOSITORY_URL="https://git.kende.pl/api/packages/kende/helm/api/charts"
     }
     agent {
         node { label 'docker' }
@@ -48,5 +49,20 @@ pipeline {
             }
         }
 
+        stage('Create chart') {
+            steps {
+                script {
+                    currentBuild.description = """image: $IMAGE_REPO_AND_TAG
+chart-version: $CHART_VERSION
+app-version: $IMAGE_TAG"""
+                }
+                sh "apk add --no-cache curl tar gzip"
+                sh "curl https://get.helm.sh/helm-v3.1.0-linux-amd64.tar.gz --output helm.tar.gz; tar -zxvf helm.tar.gz; cp linux-amd64/helm /usr/local/bin; rm helm.tar.gz linux-amd64 -r"
+                sh "helm package ./chart/accumulation-zone --version $CHART_VERSION --app-version $IMAGE_TAG"
+                withCredentials([usernamePassword(credentialsId: 'gitea', passwordVariable: 'chartPassword', usernameVariable: 'chartUser')]) {
+                    sh "curl --user $chartUser:$chartPassword -X POST --upload-file ./accumulation-zone-${CHART_VERSION}.tgz ${CHART_REPOSITORY_URL}"
+                }
+            }
+        }
     }
 }
