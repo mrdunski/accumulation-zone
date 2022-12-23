@@ -40,7 +40,7 @@ spec:
                 - mountPath: "/data"
                   name: "data"
               {{- end }}
-              command:
+              args:
                 - changes
                 - upload
           {{- if .Values.volumeToBackup }}
