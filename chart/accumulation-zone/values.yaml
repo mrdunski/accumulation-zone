@@ -60,7 +60,7 @@ logger:
   level: "info"
   format: "text"
 
-excludes: ""
+excludes: []
 
 aws:
   accountId: ""

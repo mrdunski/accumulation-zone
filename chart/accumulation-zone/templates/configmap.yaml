@@ -5,9 +5,9 @@ metadata:
   labels:
     {{- include "accumulation-zone.labels" . | nindent 4 }}
 data:
-  VAULT_NAME: "{{ required "aws.vaultName is required" .Values.aws.vaultName }}"
-  ACCOUNT_ID: "{{ required "aws.accountId is required" .Values.aws.accountId }}"
-  REGION_ID: "{{ required "aws.regionId is required" .Values.aws.regionId }}"
-  LOG_LEVEL: "{{ .Values.logger.level }}"
-  LOG_FORMAT: "{{ .Values.logger.format }}"
-  BACKUP_EXCLUDES: "{{ .Values.excludes }}"
+  VAULT_NAME: {{ required "aws.vaultName is required" .Values.aws.vaultName | quote }}
+  ACCOUNT_ID: {{ required "aws.accountId is required" .Values.aws.accountId | quote }}
+  REGION_ID: {{ required "aws.regionId is required" .Values.aws.regionId | quote }}
+  LOG_LEVEL: {{ .Values.logger.level | quote }}
+  LOG_FORMAT: {{ .Values.logger.format | quote }}
+  BACKUP_EXCLUDES: {{ join "," .Values.excludes | quote }}

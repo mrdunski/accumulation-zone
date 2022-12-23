@@ -3,7 +3,7 @@ pipeline {
         IMAGE_TAG = "${(GIT_BRANCH == 'main') ? "0.$BUILD_NUMBER.0.$GIT_COMMIT" : "$GIT_COMMIT"}"
         IMAGE_REPO = "mrdunski/accumulation-zone"
         IMAGE_REPO_AND_TAG = "$IMAGE_REPO:$IMAGE_TAG"
-        CHART_VERSION = "${(GIT_BRANCH == 'main') ? "0.$BUILD_NUMBER.0+$GIT_COMMIT" : "0.0.1+$GIT_COMMIT"}"
+        CHART_VERSION = "${(GIT_BRANCH == 'main') ? "1.$BUILD_NUMBER.0+$GIT_COMMIT" : "0.0.1+$GIT_COMMIT"}"
         DOCKER_BUILDKIT = "1"
         CHART_REPOSITORY_URL="https://git.kende.pl/api/packages/kende/helm/api/charts"
     }
