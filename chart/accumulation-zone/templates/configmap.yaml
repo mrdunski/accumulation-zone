@@ -10,3 +10,4 @@ data:
   REGION_ID: "{{ required "aws.regionId is required" .Values.aws.regionId }}"
   LOG_LEVEL: "{{ .Values.logger.level }}"
   LOG_FORMAT: "{{ .Values.logger.format }}"
+  BACKUP_EXCLUDES: "{{ .Values.excludes }}"
