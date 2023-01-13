@@ -7,7 +7,6 @@ import (
 
 type archiveLoader struct {
 	model.IdentifiableHashedFile
-	jobId       string
 	openContent func() (io.ReadCloser, error)
 }
 
