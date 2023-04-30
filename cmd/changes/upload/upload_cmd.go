@@ -2,6 +2,7 @@ package upload
 
 import (
 	"fmt"
+
 	"github.com/mrdunski/accumulation-zone/glacier"
 	"github.com/mrdunski/accumulation-zone/logger"
 	"github.com/mrdunski/accumulation-zone/volume"
@@ -28,6 +29,6 @@ func (c Cmd) Run() error {
 		return fmt.Errorf("failed to process changes: %w", err)
 	}
 
-	logger.Get().Infof("Done. Processed %d changes.", changes.Len())
+	logger.Get().Infof("Done. Processed: %v.", changes)
 	return nil
 }

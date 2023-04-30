@@ -91,3 +91,11 @@ volumeToBackup: {}
 #  persistentVolumeClaim:
 #    claimName: "claim"
 #    readOnly: false
+
+prometheus:
+  pushTelemetry: false
+  printTelemetry: false
+  pushGatewayUrl: http://prometheus-prometheus-pushgateway:9091
+  telemetryJobName: az
+  telemetryJobId: ""
+  pushGatewayUpdateRate: 60s

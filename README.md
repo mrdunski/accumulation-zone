@@ -1,8 +1,8 @@
 # accumulation-zone
 
-Accumulation Zone is where glacier forms.
+Accumulation Zone is where the glacier forms.
 
-AWS Glacier is reliable, cost-effective and high-performant backup.
+AWS Glacier is a reliable, cost-effective, and high-performant backup.
 
 This application operates directly with AWS Glacier and sends incremental updates to cold storage. It uses local index file to track file changes and sends only updates.
 
@@ -50,7 +50,7 @@ docker run -it -v /path/to/your/data:/data mrdunski/accumulation-zone recover al
   --tier=Expedited
 ```
 
-for more info use:
+for more info, use:
 
 ```shell
 docker run -it mrdunski/accumulation-zone --help
@@ -58,7 +58,7 @@ docker run -it mrdunski/accumulation-zone --help
 
 ### Backup with Helm and Kubernetes
 
-Prepare values.yaml file. Example can be found here: [exampleValues.yaml](chart/accumulation-zone/exampleValues.yaml)
+Prepare `values.yaml` file. Example can be found here: [exampleValues.yaml](chart/accumulation-zone/exampleValues.yaml)
 
 ```shell
 helm install -f ./chart/accumulation-zone/exampleValues.yaml my-release ./chart/accumulation-zone
@@ -90,7 +90,7 @@ export PATH_TO_BACKUP=/path/to/your/data
 ./accumulation-zone recover all --tier=Expedited
 ```
 
-for more info use:
+for more info, use:
 
 ```shell
 go build -o accumulation-zone && ./accumulation-zone --help
@@ -111,7 +111,7 @@ ginkgo -r
 
 ## Important notice
 
-A wise man once said: if you don't test your backup, you don't have a backup.
+A wise man once said: if you do not test your backup, you do not have a backup.
 
 Please be careful when using this application to handle important data. 
 Before using it, verify if it works correctly for your use case.

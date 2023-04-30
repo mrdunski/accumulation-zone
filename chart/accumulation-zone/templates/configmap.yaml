@@ -11,3 +11,9 @@ data:
   LOG_LEVEL: {{ .Values.logger.level | quote }}
   LOG_FORMAT: {{ .Values.logger.format | quote }}
   BACKUP_EXCLUDES: {{ join "," .Values.excludes | quote }}
+  PUSH_TELEMETRY: {{ .Values.prometheus.pushTelemetry | quote }}
+  PRINT_TELEMETRY: {{ .Values.prometheus.printTelemetry | quote }}
+  PUSH_GATEWAY_URL: {{ .Values.prometheus.pushGatewayUrl | quote }}
+  TELEMETRY_JOB_NAME: {{ .Values.prometheus.telemetryJobName | quote }}
+  TELEMETRY_JOB_ID: {{ .Values.prometheus.telemetryJobId | quote }}
+  PUSH_GATEWAY_UPDATE_RATE: {{ .Values.prometheus.pushGatewayUpdateRate | quote }}

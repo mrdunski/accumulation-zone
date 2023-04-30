@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -13,7 +15,21 @@ import (
 	"github.com/mrdunski/accumulation-zone/index"
 	"github.com/mrdunski/accumulation-zone/logger"
 	"github.com/mrdunski/accumulation-zone/model"
+	"github.com/mrdunski/accumulation-zone/telemetry"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	uploadBytesSummary = promauto.NewSummary(prometheus.SummaryOpts{
+		Namespace: telemetry.Namespace,
+		Name:      "glacier_upload_archives_bytes",
+	})
+	deleteCounter = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: telemetry.Namespace,
+		Name:      "glacier_deleted_archives_sum",
+	})
 )
 
 type Cli interface {
@@ -127,14 +143,22 @@ func (c *Connection) Delete(id string) error {
 		return err
 	}
 
+	deleteCounter.Inc()
+
 	return nil
 }
 
-func (c *Connection) Upload(file model.FileWithContent) (string, error) {
+func (c *Connection) Upload(file model.FileWithContent) (id string, err error) {
 	content, err := file.Content()
 	if err != nil {
 		return "", err
 	}
+	defer func(content io.ReadCloser) {
+		cErr := content.Close()
+		if err != nil && err == nil {
+			err = cErr
+		}
+	}(content)
 
 	checksum := file.Hash()
 	if checksum == "" {
@@ -155,7 +179,17 @@ func (c *Connection) Upload(file model.FileWithContent) (string, error) {
 		return "", err
 	}
 
+	c.reportSize(file, uploadBytesSummary)
+
 	return *arch.ArchiveId, nil
+}
+
+func (c *Connection) reportSize(file model.FileWithContent, summary prometheus.Summary) {
+	size, err := file.Size()
+	if err != nil {
+		c.logger().WithError(err).Errorf("Failed to raport file size: %s", file.Path())
+	}
+	summary.Observe(float64(size))
 }
 
 func (c *Connection) awaitJobCompletion(inputJob *glacier.JobDescription) (*glacier.JobDescription, error) {
@@ -418,9 +452,30 @@ func (c *Connection) LoadContentFromGlacier(file model.IdentifiableHashedFile) (
 		return output.Body, nil
 	}
 
+	getSize := func() (int64, error) {
+		output, err := c.GetJobAwsOutput(flatString(job.JobId))
+		if err != nil {
+			return -1, err
+		}
+
+		contentRange := strings.Split("/", flatString(output.ContentRange))
+
+		if len(contentRange) != 2 {
+			return -1, fmt.Errorf("unexpected content range: %s", flatString(output.ContentRange))
+		}
+
+		bytes, err := strconv.ParseInt(contentRange[1], 10, 64)
+		if err != nil {
+			return -1, fmt.Errorf("unexpected content range: %s, cause: %w", flatString(output.ContentRange), err)
+		}
+
+		return bytes, nil
+	}
+
 	return archiveLoader{
 		openContent:            openContent,
 		IdentifiableHashedFile: file,
+		getSize:                getSize,
 	}, nil
 }
 

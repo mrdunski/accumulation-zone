@@ -11,6 +11,7 @@ type HashedFile interface {
 type FileWithContent interface {
 	HashedFile
 	Content() (io.ReadCloser, error)
+	Size() (int64, error)
 }
 
 type ChangeIdHolder interface {

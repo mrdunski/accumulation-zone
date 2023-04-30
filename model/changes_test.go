@@ -2,15 +2,20 @@ package model
 
 import (
 	"fmt"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"io"
 	"strings"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 type file struct {
 	path string
 	hash string
+}
+
+func (h file) Size() (int64, error) {
+	return 0, nil
 }
 
 func (h file) Path() string {

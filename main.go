@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/alecthomas/kong"
 	"github.com/mrdunski/accumulation-zone/cmd/changes/commit"
 	"github.com/mrdunski/accumulation-zone/cmd/changes/ls"
@@ -8,10 +11,43 @@ import (
 	"github.com/mrdunski/accumulation-zone/cmd/inventory"
 	"github.com/mrdunski/accumulation-zone/cmd/restore"
 	"github.com/mrdunski/accumulation-zone/logger"
+	"github.com/mrdunski/accumulation-zone/telemetry"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+var (
+	startGauge = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: telemetry.Namespace,
+		Name:      "job_start_time",
+	})
+
+	endGauge = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: telemetry.Namespace,
+		Name:      "job_end_time",
+	})
+
+	executionTime = promauto.NewSummary(prometheus.SummaryOpts{
+		Namespace: telemetry.Namespace,
+		Name:      "job_execution_time",
+	})
+
+	resultCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: telemetry.Namespace,
+		Name:      "job_result",
+	}, []string{"result"})
+
+	successCounter = resultCounter.With(prometheus.Labels{"result": "success"})
+	failureCounter = resultCounter.With(prometheus.Labels{"result": "failure"})
+	startedCounter = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: telemetry.Namespace,
+		Name:      "job_started",
+	})
 )
 
 type CommandInput struct {
 	logger.LogConfig
+	telemetry.TeleConfig
 
 	Recover struct {
 		Index restore.IndexCmd `cmd:"" help:"Recovers index file from glacier."`
@@ -33,12 +69,61 @@ type CommandInput struct {
 }
 
 func main() {
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	timer := prometheus.NewTimer(executionTime)
+
+	startGauge.SetToCurrentTime()
+	startedCounter.Inc()
 	var input = CommandInput{}
 	kongCtx := kong.Parse(&input)
 	input.LogConfig.InitLogger(kongCtx)
+	reportJobInfo(kongCtx)
+
+	tele := input.TeleConfig.NewRecorder()
+	tele.Record()
+	go tele.ContinuousRecord(ctx)
+
+	defer func() {
+		endGauge.SetToCurrentTime()
+		cancelFunc()
+		if r := recover(); r != nil {
+			failureCounter.Inc()
+			tele.Record()
+			panic(r)
+		}
+		successCounter.Inc()
+		tele.Record()
+	}()
+	defer timer.ObserveDuration()
 
 	err := kongCtx.Run()
 	if err != nil {
 		logger.Get().WithError(err).Fatalf("Command failed")
 	}
+}
+
+func reportJobInfo(kongCtx *kong.Context) {
+	metric := prometheus.MustNewConstMetric(
+		prometheus.NewDesc(fmt.Sprintf("%s_%s", telemetry.Namespace, "job_info"), "details about job execution", []string{}, prometheus.Labels{
+			"command": kongCtx.Command(),
+		}),
+		prometheus.GaugeValue,
+		1)
+
+	c := collectorWrapper{Metric: metric}
+
+	prometheus.DefaultRegisterer.MustRegister(c)
+
+}
+
+type collectorWrapper struct {
+	prometheus.Metric
+}
+
+func (c collectorWrapper) Describe(descs chan<- *prometheus.Desc) {
+	descs <- c.Desc()
+}
+
+func (c collectorWrapper) Collect(metrics chan<- prometheus.Metric) {
+	metrics <- c.Metric
 }

@@ -2,9 +2,30 @@ package index
 
 import (
 	"errors"
+
 	"github.com/mrdunski/accumulation-zone/logger"
 	"github.com/mrdunski/accumulation-zone/model"
+	"github.com/mrdunski/accumulation-zone/telemetry"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	commitCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: telemetry.Namespace,
+		Name:      "index_commit_count",
+	}, []string{"type"})
+	addCounter    = commitCounter.With(prometheus.Labels{"type": "add"})
+	deleteCounter = commitCounter.With(prometheus.Labels{"type": "delete"})
+
+	changeGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: telemetry.Namespace,
+		Name:      "index_changes_count",
+	}, []string{"type"})
+
+	addChangeGauge    = changeGauge.With(prometheus.Labels{"type": "add"})
+	deleteChangeGauge = changeGauge.With(prometheus.Labels{"type": "delete"})
 )
 
 type committer interface {
@@ -27,7 +48,7 @@ func (v voidCommitter) remove(_ Entry) error {
 	return nil
 }
 
-// Index tracks changes made on files
+// Index tracks changes made in files
 type Index struct {
 	committer
 	entries entries
@@ -45,7 +66,7 @@ func New(entryList []Entry) Index {
 	return index
 }
 
-// LoadIndexFile loads entries from specified path or creates new index file
+// LoadIndexFile loads entries from a specified path or creates a new index file
 func LoadIndexFile(filePath string) (Index, error) {
 	logger.WithComponent("index").Debugf("Loading index: %s", filePath)
 	records := fileRecords{filePath: filePath}
@@ -60,7 +81,7 @@ func LoadIndexFile(filePath string) (Index, error) {
 	}, nil
 }
 
-// CalculateChanges for given list of files, finds model.Changes for those files comparing to version stored in Index
+// CalculateChanges for a given list of files, finds model.Changes for those files comparing to version stored in Index
 func (i Index) CalculateChanges(files []model.FileWithContent) model.Changes {
 	switch {
 	case logger.Get().IsLevelEnabled(logrus.DebugLevel):
@@ -93,13 +114,18 @@ func (i Index) CalculateChanges(files []model.FileWithContent) model.Changes {
 	case logger.Get().IsLevelEnabled(logrus.TraceLevel):
 		logger.WithComponent("index").Debugf("Calculated changes. %v", changes)
 	}
+
+	addChangeGauge.Set(float64(len(changes.Additions)))
+	deleteChangeGauge.Set(float64(len(changes.Deletions)))
 	return changes
 }
 
+// IsChanged returns true if the file was changed.
 func (i Index) IsChanged(file model.FileWithContent) bool {
 	return !i.entries.hasEntryWithHash(file.Path(), file.Hash())
 }
 
+// CommitAdd marks change as complete.
 func (i Index) CommitAdd(changeId string, file model.HashedFile) error {
 	logger.WithComponent("index").Debugf("Commiting add %s %s", changeId, file.Path())
 	if i.entries.hasEntryWithChangeId(file.Path(), changeId) && changeId != "" {
@@ -111,9 +137,11 @@ func (i Index) CommitAdd(changeId string, file model.HashedFile) error {
 	}
 	i.entries.add(entry)
 
+	addCounter.Inc()
 	return nil
 }
 
+// CommitDelete marks change as complete.
 func (i Index) CommitDelete(changeId string, file model.HashedFile) error {
 	logger.WithComponent("index").Debugf("Commiting delete %s %s", changeId, file.Path())
 	if !i.entries.hasEntryWithChangeId(file.Path(), changeId) {
@@ -125,9 +153,11 @@ func (i Index) CommitDelete(changeId string, file model.HashedFile) error {
 	}
 	i.entries.deleteEntryByChangeId(file.Path(), changeId)
 
+	deleteCounter.Inc()
 	return nil
 }
 
+// Clear removes all files from index.
 func (i Index) Clear() error {
 	logger.WithComponent("index").Debugf("Clearing index")
 	for k := range i.entries {

@@ -4,6 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"reflect"
+	"runtime"
+	"strings"
+	"testing"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
 	awsGlacier "github.com/aws/aws-sdk-go/service/glacier"
@@ -17,13 +25,6 @@ import (
 	"github.com/mrdunski/accumulation-zone/model/mock_model"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"io"
-	"os"
-	"path/filepath"
-	"reflect"
-	"runtime"
-	"strings"
-	"testing"
 )
 
 const (
@@ -103,6 +104,7 @@ var _ = Describe("Connection", func() {
 				DoAndReturn(func() (io.ReadCloser, error) {
 					return io.NopCloser(strings.NewReader(testFileContent)), nil
 				})
+			exampleFile.EXPECT().Size().AnyTimes().Return(int64(100), nil)
 		})
 
 		It("handles add", func() {

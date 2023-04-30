@@ -9,6 +9,10 @@ import (
 
 type stdOS struct{}
 
+func (f stdOS) Stat(name string) (os.FileInfo, error) {
+	return os.Stat(name)
+}
+
 func (f stdOS) ReadDir(name string) ([]os.DirEntry, error) {
 	return os.ReadDir(name)
 }
@@ -22,6 +26,7 @@ var stdOSInstance = stdOS{}
 type FileAccess interface {
 	ReadDir(name string) ([]os.DirEntry, error)
 	Open(name string) (io.ReadCloser, error)
+	Stat(name string) (os.FileInfo, error)
 }
 
 type TreeHashedFile struct {
@@ -49,4 +54,13 @@ func (fh TreeHashedFile) String() string {
 
 func (fh TreeHashedFile) Hash() string {
 	return fh.treeHash
+}
+
+func (fh TreeHashedFile) Size() (int64, error) {
+	stat, err := fh.os.Stat(path.Join(fh.basePath, fh.path))
+	if err != nil {
+		return -1, err
+	}
+
+	return stat.Size(), nil
 }

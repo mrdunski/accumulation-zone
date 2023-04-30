@@ -128,6 +128,21 @@ func (mr *MockFileWithContentMockRecorder) Path() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Path", reflect.TypeOf((*MockFileWithContent)(nil).Path))
 }
 
+// Size mocks base method.
+func (m *MockFileWithContent) Size() (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Size")
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Size indicates an expected call of Size.
+func (mr *MockFileWithContentMockRecorder) Size() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockFileWithContent)(nil).Size))
+}
+
 // MockChangeIdHolder is a mock of ChangeIdHolder interface.
 type MockChangeIdHolder struct {
 	ctrl     *gomock.Controller

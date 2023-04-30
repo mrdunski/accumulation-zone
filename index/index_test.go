@@ -2,14 +2,15 @@ package index_test
 
 import (
 	"errors"
-	"github.com/mrdunski/accumulation-zone/index"
-	"github.com/mrdunski/accumulation-zone/model"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"io"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/mrdunski/accumulation-zone/index"
+	"github.com/mrdunski/accumulation-zone/model"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 type matchingFile struct {
@@ -37,6 +38,10 @@ func (m matchingFile) NegatedFailureMessage(_ interface{}) (message string) {
 
 type entryWithContent struct {
 	index.Entry
+}
+
+func (e entryWithContent) Size() (int64, error) {
+	return 0, nil
 }
 
 func (e entryWithContent) Content() (io.ReadCloser, error) {
