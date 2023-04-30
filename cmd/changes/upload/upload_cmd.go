@@ -29,6 +29,6 @@ func (c Cmd) Run() error {
 		return fmt.Errorf("failed to process changes: %w", err)
 	}
 
-	logger.Get().Infof("Done. Processed: %v.", changes)
+	logger.Get().Infof("Done. Added: %d, deleted: %d.", len(changes.Additions), len(changes.Additions))
 	return nil
 }
