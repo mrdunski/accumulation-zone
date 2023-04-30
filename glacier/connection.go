@@ -4,6 +4,9 @@ package glacier
 import (
 	"errors"
 	"fmt"
+	"io"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/glacier"
@@ -11,8 +14,6 @@ import (
 	"github.com/mrdunski/accumulation-zone/logger"
 	"github.com/mrdunski/accumulation-zone/model"
 	"github.com/sirupsen/logrus"
-	"io"
-	"time"
 )
 
 type Cli interface {
@@ -419,7 +420,6 @@ func (c *Connection) LoadContentFromGlacier(file model.IdentifiableHashedFile) (
 
 	return archiveLoader{
 		openContent:            openContent,
-		jobId:                  flatString(job.JobId),
 		IdentifiableHashedFile: file,
 	}, nil
 }
