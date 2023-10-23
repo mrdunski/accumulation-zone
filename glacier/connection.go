@@ -85,15 +85,21 @@ func (c *Connection) logger() *logrus.Entry {
 }
 
 func (c *Connection) Process(committer model.ChangeCommitter, changes model.Changes) error {
+	var resultErr error
 	for _, change := range changes.Additions {
 		id, err := c.processAdd(change)
 		if err != nil {
-			return err
+			resultErr = err
+			c.logger().WithError(err).Errorf("Failed to process change: %v", change)
 		}
 		err = committer.CommitAdd(id, change)
 		if err != nil {
 			return err
 		}
+	}
+
+	if resultErr != nil {
+		return fmt.Errorf("upload failed: %w (check previous logs)", resultErr)
 	}
 
 	for _, change := range changes.Deletions {
