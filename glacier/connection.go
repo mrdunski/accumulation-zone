@@ -91,6 +91,7 @@ func (c *Connection) Process(committer model.ChangeCommitter, changes model.Chan
 		if err != nil {
 			resultErr = err
 			c.logger().WithError(err).Errorf("Failed to process change: %v", change)
+			continue
 		}
 		err = committer.CommitAdd(id, change)
 		if err != nil {
